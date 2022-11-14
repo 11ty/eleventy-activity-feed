@@ -1,5 +1,11 @@
 # eleventy-activity-feed
 
+Activity feed lets you build one centralized RSS feed that pulls in new entries from a bunch of different social networking sites. Support for (one or more) YouTube, RSS or Atom for existing blogs, Mastodon (via RSS), and your Twitter account (contributions for more are welcome!).
+
+This allows you to encourage folks to subscribe in *one* location and you can control how that feed is populated later.
+
+As a completely hypothetical example, if/when Twitter dies in a burning fire and you want to remove that channel from your centralized feed, you can do so and still keep all of your existing subscribers!
+
 ## Installation
 
 ```

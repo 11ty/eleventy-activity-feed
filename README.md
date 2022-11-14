@@ -6,7 +6,7 @@ This allows you to encourage folks to subscribe in *one* location and you can co
 
 As a completely hypothetical example, if/when Twitter dies in a burning fire and you want to remove that channel from your centralized feed, you can do so and still keep all of your existing subscribers!
 
-_Notable limitation:_ This is not a permanent data store or archival tool for your content. This does _not_ (yet?) fetch old data beyond the initial page of results for each activity type’s API. This is merely a syndication and rebroadcast tool for your new content in RSS.
+_Notable limitation:_ This is not a permanent data store or archival tool for your content. This does _not_ (yet?) fetch old data beyond the initial page of results for each activity type’s API. This is merely a aggregation and rebroadcast tool for your new content in RSS.
 
 ## Demo
 

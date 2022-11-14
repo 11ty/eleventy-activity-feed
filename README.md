@@ -12,6 +12,12 @@ Twitter User activity requires a `TWITTER_BEARER_TOKEN` environment variable (yo
 // github releases and activity
 // todo historical duration -->
 
+## Live Demo
+
+You can subscribe to the following Eleventy feed in your RSS reader of choice to see it in action:
+
+https://www.11ty.dev/follow/
+
 ## Sample Usage
 
 This is an `.11ty.cjs` Eleventy JavaScript template (e.g. `follow.11ty.cjs`):
@@ -52,3 +58,7 @@ module.exports = class {
 	}
 };
 ```
+
+## What’s Next?
+
+Happy to accept PRs for better HTML display of different feed entries (YouTube needs URL->`<a>` linkified descriptions and Twitter could use @-username links on content) and addition of more types of data! Feel free to contribute!

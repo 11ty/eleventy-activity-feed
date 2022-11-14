@@ -75,7 +75,7 @@ class ActivityFeed {
 		<item>
 			<title>${entry.title}</title>
 			<link>${entry.url}</link>
-			<description><![CDATA[${entry.content}]]></description>
+			<description><![CDATA[${entry.content || ""}]]></description>
 			<pubDate>${pluginRss.dateToRfc822(new Date(Date.parse(entry.published)))}</pubDate>
 			<dc:creator>${entry.author.name}</dc:creator>
 			<guid>${entry.url}</guid>

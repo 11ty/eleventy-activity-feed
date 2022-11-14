@@ -23,7 +23,69 @@ class TwitterApiUrl {
 	getUrl() {
 		return `${this.url}${this.convertParamsToString()}`;
 	}
-} 
+}
+
+class TwitterContent {
+	// Thanks to https://stackoverflow.com/questions/7467840/nl2br-equivalent-in-javascript/7467863#7467863
+	static nl2br(str) {
+		if (typeof str === 'undefined' || str === null) {
+			return "";
+		}
+		return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1<br>$2');
+	}
+
+	static getUrlObject(url) {
+		let displayUrl = url.expanded_url;
+		let targetUrl = url.expanded_url;
+
+		// Links to other tweets
+		if(displayUrl.startsWith("https://twitter.com") && displayUrl.indexOf("/status/") > -1) {
+			displayUrl = displayUrl.substring("https://twitter.com/".length);
+			displayUrl = displayUrl.replace("/status/", "/");
+		} else {
+			if(displayUrl.startsWith("http://")) {
+				displayUrl = displayUrl.substring("http://".length);
+			}
+			if(displayUrl.startsWith("https://")) {
+				displayUrl = displayUrl.substring("https://".length);
+			}
+			if(displayUrl.startsWith("www.")) {
+				displayUrl = displayUrl.substring("www.".length);
+			}
+		}
+
+		return {
+			displayUrl,
+			targetUrl,
+		}
+	}
+
+	static async renderFullText(text, tweet) {
+		// Markdown
+		// replace `*` with <code>*</code>
+		text = text.replace(/\`([^\`]*)\`/g, "<code>$1</code>");
+
+		// replace \n with <br>
+		text = TwitterContent.nl2br(text);
+
+		// linkify urls
+		if( tweet.entities ) {
+			for(let url of tweet.entities?.urls || []) {
+				if(url.expanded_url.indexOf(`/${tweet.id}/photo/`) > -1) { // || url.expanded_url.indexOf(`/${tweet.id}/video/`) > -1) {
+					text = text.replace(url.url, "");
+				} else {
+					let displayUrl = TwitterContent.getUrlObject(url);
+					text = text.replace(url.url, `<a href="${displayUrl.targetUrl}">${displayUrl.displayUrl}</a>`);
+				}
+			}
+			// TODO @mentions
+		}
+
+		// TODO: images, videos, gifs
+
+		return text;
+	}
+}
 
 class TwitterUserActivity extends Activity {
 	constructor(userName, userId, options = {}) {
@@ -121,25 +183,25 @@ class TwitterUserActivity extends Activity {
 	}
 
 	/* {
-      text: 'RT @eleven_ty: 🆕 Eleventy WebC Plugin v0.6.0 🎈🐀⚡️\n' +
-        '\n' +
-        '🛠 Includes new WebC v0.6.x features and bug fixes https://t.co/Pnl39y04pu\n' +
-        '\n' +
-        'https://t.co/…',
-      id: '1587539505753595904',
-      author_id: '96383',
-      possibly_sensitive: false,
-      public_metrics: [Object],
-      reply_settings: 'everyone',
-      created_at: '2022-11-01T20:18:07.000Z',
-      source: 'Twitter for iPhone',
-      entities: [Object],
-      lang: 'en',
-      conversation_id: '1587539505753595904',
-      edit_history_tweet_ids: [Array],
-      referenced_tweets: [Array]
-    } */
-	cleanEntry(entry, data) {
+			text: 'RT @eleven_ty: 🆕 Eleventy WebC Plugin v0.6.0 🎈🐀⚡️\n' +
+				'\n' +
+				'🛠 Includes new WebC v0.6.x features and bug fixes https://t.co/Pnl39y04pu\n' +
+				'\n' +
+				'https://t.co/…',
+			id: '1587539505753595904',
+			author_id: '96383',
+			possibly_sensitive: false,
+			public_metrics: [Object],
+			reply_settings: 'everyone',
+			created_at: '2022-11-01T20:18:07.000Z',
+			source: 'Twitter for iPhone',
+			entities: [Object],
+			lang: 'en',
+			conversation_id: '1587539505753595904',
+			edit_history_tweet_ids: [Array],
+			referenced_tweets: [Array]
+		} */
+	async cleanEntry(entry, data) {
 		let obj = {
 			type: "tweet",
 			title: this.toReadableDate(entry.created_at),
@@ -150,7 +212,7 @@ class TwitterUserActivity extends Activity {
 			},
 			published: entry.created_at,
 			// updated: 
-			content: entry.text,
+			content: await TwitterContent.renderFullText(entry.text, entry),
 		}
 
 		if(this.isTweetReply(entry)) {

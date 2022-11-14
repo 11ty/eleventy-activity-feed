@@ -51,14 +51,16 @@ class Activity {
 
 	async getEntries() {
 		let data = await this.getData(this.getUrl(), this.getType());
-		let entries = this.getEntriesFromData(data).map(entry => {
-			let ret = this.cleanEntry(entry, data);
-			if(this.label) {
-				ret.title = `${this.label}: ${ret.title}`;
-			}
-			return ret;
+		let entries = this.getEntriesFromData(data).map((entry) => {
+			return new Promise(async (resolve) => {
+				let ret = await this.cleanEntry(entry, data);
+				if(this.label) {
+					ret.title = `${this.label}: ${ret.title}`;
+				}
+				resolve(ret);
+			})
 		});
-		return entries;
+		return Promise.all(entries);
 	}
 }
 

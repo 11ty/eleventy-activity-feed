@@ -6,6 +6,12 @@ This allows you to encourage folks to subscribe in *one* location and you can co
 
 As a completely hypothetical example, if/when Twitter dies in a burning fire and you want to remove that channel from your centralized feed, you can do so and still keep all of your existing subscribers!
 
+## Live Demo
+
+You can subscribe to the following Eleventy feed in your RSS reader of choice to see it in action:
+
+https://www.11ty.dev/follow/
+
 ## Installation
 
 ```
@@ -17,12 +23,6 @@ Twitter User activity requires a `TWITTER_BEARER_TOKEN` environment variable (yo
 <!-- // npm packages published
 // github releases and activity
 // todo historical duration -->
-
-## Live Demo
-
-You can subscribe to the following Eleventy feed in your RSS reader of choice to see it in action:
-
-https://www.11ty.dev/follow/
 
 ## Sample Usage
 

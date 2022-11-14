@@ -31,6 +31,14 @@ class Activity {
 		return {};
 	}
 
+	// Thanks to https://stackoverflow.com/questions/7467840/nl2br-equivalent-in-javascript/7467863#7467863
+	static nl2br(str) {
+		if (typeof str === 'undefined' || str === null) {
+			return "";
+		}
+		return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1<br>$2');
+	}
+
 	async getData(url, type) {
 		let result = EleventyFetch(url, {
 			duration: this.cacheDuration || "0s",

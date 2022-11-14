@@ -26,14 +26,6 @@ class TwitterApiUrl {
 }
 
 class TwitterContent {
-	// Thanks to https://stackoverflow.com/questions/7467840/nl2br-equivalent-in-javascript/7467863#7467863
-	static nl2br(str) {
-		if (typeof str === 'undefined' || str === null) {
-			return "";
-		}
-		return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1<br>$2');
-	}
-
 	static getUrlObject(url) {
 		let displayUrl = url.expanded_url;
 		let targetUrl = url.expanded_url;
@@ -66,7 +58,7 @@ class TwitterContent {
 		text = text.replace(/\`([^\`]*)\`/g, "<code>$1</code>");
 
 		// replace \n with <br>
-		text = TwitterContent.nl2br(text);
+		text = Activity.nl2br(text);
 
 		// linkify urls
 		if( tweet.entities ) {

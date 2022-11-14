@@ -24,9 +24,9 @@ Twitter User activity requires a `TWITTER_BEARER_TOKEN` environment variable (yo
 // github releases and activity
 // todo historical duration -->
 
-## Sample Usage
+## Sample Eleventy Usage
 
-This is an `.11ty.cjs` Eleventy JavaScript template (e.g. `follow.11ty.cjs`):
+This is an `.11ty.cjs` Eleventy JavaScript template (e.g. `follow.11ty.cjs`), most useful in an EcmaScript Modules project (via `"type": "module"` in your `package.json`). Use `.11ty.js` (e.g. `follow.11ty.js`) if your project is using CommonJS.
 
 ```js
 module.exports = class {

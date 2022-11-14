@@ -6,7 +6,11 @@ This allows you to encourage folks to subscribe in *one* location and you can co
 
 As a completely hypothetical example, if/when Twitter dies in a burning fire and you want to remove that channel from your centralized feed, you can do so and still keep all of your existing subscribers!
 
-_Notable limitation:_ This is not a permanent data store or archival tool for your content. This does _not_ (yet?) fetch old data beyond the initial page of results for each activity type’s API. This is merely a aggregation and rebroadcast tool for your new content in RSS.
+**Limitations:**
+
+* This is not a permanent data store or archival tool for your content. This does _not_ (yet?) fetch old data beyond the initial page of results for each activity type’s API. This is merely a aggregation and rebroadcast tool for your new content in RSS.
+* When used in a static build, this will only update the feed when your build runs. I’d recommend setting up a recurring build to generate your feed regularly (maybe daily?). You could use this in serverless mode if you wanted!
+
 
 ## Demo
 
@@ -26,15 +30,17 @@ Twitter User activity requires a `TWITTER_BEARER_TOKEN` environment variable (yo
 // github releases and activity
 // todo historical duration -->
 
-### Sample Eleventy Usage
+### Sample Eleventy Template
 
-This is an `.11ty.cjs` Eleventy JavaScript template (e.g. `follow.11ty.cjs`), most useful in an EcmaScript Modules project (via `"type": "module"` in your `package.json`). Use `.11ty.js` (e.g. `follow.11ty.js`) if your project is using CommonJS.
+* Use `follow-feed.11ty.cjs` in an ESM project (if `"type": "module"` in your `package.json`)
+* Use `follow-feed.11ty.js` in a CommonJS project
 
 ```js
 module.exports = class {
 	data() {
 		return {
-			permalink: "follow.rss"
+			// Controls where the file is written
+			permalink: "/follow.rss"
 		}
 	}
 
@@ -69,4 +75,6 @@ module.exports = class {
 
 ## What’s Next?
 
-Happy to accept PRs for better HTML display of different feed entries (YouTube needs URL->`<a>` linkified descriptions and Twitter could use @-username links on content) and addition of more types of data! Feel free to contribute!
+Happy to accept PRs for better HTML display of different feed entries ([YouTube needs URL->`<a>` linkified descriptions](https://github.com/11ty/eleventy-activity-feed/issues/2) and [Twitter could use @-username links on content](https://github.com/11ty/eleventy-activity-feed/issues/3)) and addition of more types of data! Feel free to contribute!
+
+Check out the [issue tracker](https://github.com/11ty/eleventy-activity-feed/issues).

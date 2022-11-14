@@ -10,6 +10,7 @@ As a completely hypothetical example, if/when Twitter dies in a burning fire and
 
 * This is not a permanent data store or archival tool for your content. This does _not_ (yet?) fetch old data beyond the initial page of results for each activity type’s API. This is merely a aggregation and rebroadcast tool for your new content in RSS.
 * When used in a static build, this will only update the feed when your build runs. I’d recommend setting up a recurring build to generate your feed regularly (maybe daily?). You could use this in serverless mode if you wanted!
+* If on Netlify, I would also recommend using the `netlify-plugin-cache` plugin to persist your API fetch call cache across builds. You can see an example of this on the [Eleventy Fetch docs](https://www.11ty.dev/docs/plugins/fetch/#running-this-on-your-build-server). You can control the maximum frequency at which new fetches are made to the APIs using `feed.setCacheDuration("4h");`
 
 
 ## Demo

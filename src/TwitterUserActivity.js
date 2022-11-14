@@ -40,17 +40,17 @@ class TwitterContent {
 
 		// Links to other tweets
 		if(displayUrl.startsWith("https://twitter.com") && displayUrl.indexOf("/status/") > -1) {
-			displayUrl = displayUrl.substring("https://twitter.com/".length);
+			displayUrl = "@" + displayUrl.slice("https://twitter.com/".length);
 			displayUrl = displayUrl.replace("/status/", "/");
 		} else {
 			if(displayUrl.startsWith("http://")) {
-				displayUrl = displayUrl.substring("http://".length);
+				displayUrl = displayUrl.slice("http://".length);
 			}
 			if(displayUrl.startsWith("https://")) {
-				displayUrl = displayUrl.substring("https://".length);
+				displayUrl = displayUrl.slice("https://".length);
 			}
 			if(displayUrl.startsWith("www.")) {
-				displayUrl = displayUrl.substring("www.".length);
+				displayUrl = displayUrl.slice("www.".length);
 			}
 		}
 

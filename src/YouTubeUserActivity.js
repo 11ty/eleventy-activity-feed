@@ -29,6 +29,7 @@ class YouTubeUserActivity extends Activity {
 			},
 			published: entry.published,
 			updated: entry.updated,
+			content: entry['media:group']['media:description'],
 		}
 	}
 }

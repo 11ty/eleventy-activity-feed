@@ -9,7 +9,8 @@ npm install @11ty/eleventy-activity-feed
 Twitter User activity requires a `TWITTER_BEARER_TOKEN` environment variable (you can put this in a `.env` file).
 
 <!-- // npm packages published
-// github releases and activity -->
+// github releases and activity
+// todo historical duration -->
 
 ## Sample Usage
 

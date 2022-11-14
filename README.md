@@ -6,7 +6,9 @@ This allows you to encourage folks to subscribe in *one* location and you can co
 
 As a completely hypothetical example, if/when Twitter dies in a burning fire and you want to remove that channel from your centralized feed, you can do so and still keep all of your existing subscribers!
 
-## Live Demo
+_Notable limitation:_ This is not a permanent data store or archival tool for your content. This does _not_ (yet?) fetch old data beyond the initial page of results for each activity type’s API. This is merely a syndication and rebroadcast tool for your new content in RSS.
+
+## Demo
 
 You can subscribe to the following Eleventy feed in your RSS reader of choice to see it in action:
 
@@ -24,7 +26,7 @@ Twitter User activity requires a `TWITTER_BEARER_TOKEN` environment variable (yo
 // github releases and activity
 // todo historical duration -->
 
-## Sample Eleventy Usage
+### Sample Eleventy Usage
 
 This is an `.11ty.cjs` Eleventy JavaScript template (e.g. `follow.11ty.cjs`), most useful in an EcmaScript Modules project (via `"type": "module"` in your `package.json`). Use `.11ty.js` (e.g. `follow.11ty.js`) if your project is using CommonJS.
 

@@ -11,6 +11,7 @@ feed.addSource("youtubeUser", "YouTube", "UCskGTioqrMBcw8pd14_334A");
 feed.addSource("atom", "Blog", "https://www.11ty.dev/blog/feed.xml");
 
 // Mastodon
+// feed.addSource("rss", "Mastodon", "https://fediverse.zachleat.com/users/zachleat.rss");
 feed.addSource("rss", "Mastodon", "https://fosstodon.org/users/eleventy.rss");
 
 // Twitter

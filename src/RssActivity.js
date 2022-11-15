@@ -24,13 +24,13 @@ class RssActivity extends Activity {
 	cleanEntry(entry, data) {
 		return {
 			type: "rss",
-			title: entry.title,
+			title: entry.title || this.toReadableDate(entry.pubDate),
 			url: entry.link,
 			author: {
 				name: data.rss.channel.title,
 				url: data.rss.channel.link,
 			},
-			published: (new Date(Date.parse(entry.pubDate))).toISOString(),
+			published: this.toIsoDate(entry.pubDate),
 			// updated: entry.updated,
 			content: entry.description,
 		}

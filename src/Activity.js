@@ -12,6 +12,10 @@ class Activity {
 		this.cacheDuration = duration;
 	}
 
+	toIsoDate(dateStr) {
+		return (new Date(Date.parse(dateStr))).toISOString();
+	}
+
 	toReadableDate(dateStr, locale = 'en-US', options = {}) {
 		options = Object.assign({
 			year: "numeric",

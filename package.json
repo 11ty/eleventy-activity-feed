@@ -5,7 +5,7 @@
   "main": "activityFeed.js",
   "type": "module",
   "scripts": {
-    "sample": "node sample.js"
+    "sample": "node sample.js > sample.rss"
   },
   "repository": {
     "type": "git",

@@ -70,7 +70,12 @@ class TwitterContent {
 					text = text.replace(url.url, `<a href="${displayUrl.targetUrl}">${displayUrl.displayUrl}</a>`);
 				}
 			}
-			// TODO @mentions
+			
+			for(let mention of tweet.entities?.user_mentions || []) {
+				let username = mention.screen_name;
+				let targetUrl = `https://twitter.com/${username}`;
+				text = text.replace(`@${username}`, `<a href="${targetUrl}">&commat;${username}</a>`); // If a user is mentioned more than once, using `&commat;` instead of `@` should prevent double-linking
+			}
 		}
 
 		// TODO: images, videos, gifs

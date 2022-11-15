@@ -77,6 +77,12 @@ module.exports = class {
 };
 ```
 
+Add to the `<head>` of your page to show it in RSS readers:
+
+```html
+<link rel="alternate" href="/follow.rss" title="Eleventy’s Activity Feed" type="application/rss+xml">
+```
+
 ## What’s Next?
 
 Happy to accept PRs for better HTML display of different feed entries ([YouTube needs URL->`<a>` linkified descriptions](https://github.com/11ty/eleventy-activity-feed/issues/2) and [Twitter could use @-username links on content](https://github.com/11ty/eleventy-activity-feed/issues/3)) and addition of more types of data! Feel free to contribute!

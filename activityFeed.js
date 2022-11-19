@@ -46,6 +46,11 @@ class ActivityFeed {
 			]
 		}
 
+		entries = entries.map(entry => {
+			entry.published = new Date(Date.parse(entry.published));
+			return entry;
+		});
+
 		return entries.sort((a, b) => {
 			if(a.published < b.published) {
 				return 1;
@@ -76,7 +81,7 @@ class ActivityFeed {
 			<title>${entry.title}</title>
 			<link>${entry.url}</link>
 			<description><![CDATA[${entry.content || ""}]]></description>
-			<pubDate>${pluginRss.dateToRfc822(new Date(Date.parse(entry.published)))}</pubDate>
+			<pubDate>${pluginRss.dateToRfc822(entry.published)}</pubDate>
 			<dc:creator>${entry.author.name}</dc:creator>
 			<guid>${entry.url}</guid>
 		</item>`;

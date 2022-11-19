@@ -71,8 +71,8 @@ class TwitterContent {
 				}
 			}
 			
-			for(let mention of tweet.entities?.user_mentions || []) {
-				let username = mention.screen_name;
+			for(let mention of tweet.entities?.mentions || []) {
+				let username = mention.username;
 				let targetUrl = `https://twitter.com/${username}`;
 				text = text.replace(`@${username}`, `<a href="${targetUrl}">&commat;${username}</a>`); // If a user is mentioned more than once, using `&commat;` instead of `@` should prevent double-linking
 			}

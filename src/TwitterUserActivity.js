@@ -84,6 +84,7 @@ class TwitterUserActivity extends Activity {
 		super();
 		this.userName = userName;
 		// TODO automate fetching the userid with an API call to e.g. https://api.twitter.com/2/users/by?usernames=zachleat,eleven_ty&user.fields=created_at,description&expansions=pinned_tweet_id
+		// This code is in tweetback: https://github.com/tweetback/tweetback/blob/d03e289ff2d6fa87459c5d657f57039dee259423/database/twitter-api.js#L42
 		this.userId = userId;
 
 		this.options = Object.assign({

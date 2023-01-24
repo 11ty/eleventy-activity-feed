@@ -24,7 +24,7 @@ class AtomActivity extends Activity {
 			title: entry.title,
 			url: entry.id,
 			author: {
-				name: data.feed.author.name,
+				name: entry?.author?.name || data.feed?.author?.name,
 			},
 			published: entry.published || entry.updated,
 			updated: entry.updated,

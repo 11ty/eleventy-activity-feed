@@ -26,11 +26,21 @@ class AtomActivity extends Activity {
 		return [];
 	}
 
+	getUrlFromEntry(entry) {
+		if(this.isValidHttpUrl(entry.id)) {
+			return entry.id;
+		}
+		if(entry.link && entry.link["@_rel"] === "alternate" && entry.link["@_href"] && this.isValidHttpUrl(entry.link["@_href"])) {
+			return entry.link["@_href"];
+		}
+		return entry.id;
+	}
+
 	cleanEntry(entry, data) {
 		return {
 			type: "atom",
 			title: entry.title,
-			url: entry.id,
+			url: this.getUrlFromEntry(entry),
 			author: {
 				name: entry?.author?.name || data.feed?.author?.name,
 			},

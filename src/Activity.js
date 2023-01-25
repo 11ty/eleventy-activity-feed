@@ -1,11 +1,26 @@
 import EleventyFetch from "@11ty/eleventy-fetch";
 import { XMLParser } from "fast-xml-parser";
 
-const xmlParser = new XMLParser();
+const xmlParser = new XMLParser({
+	attributeNamePrefix : "@_",
+	ignoreAttributes: false,
+	allowBooleanAttributes: true,
+	parseAttributeValue: true,
+});
 
 class Activity {
 	setLabel(label) {
 		this.label = label;
+	}
+
+	isValidHttpUrl(url) {
+		try {
+			new URL(url);
+			return url.startsWith("https://") || url.startsWith("http://");
+		} catch(e) {
+			// invalid url OR local path
+			return false;
+		}
 	}
 
 	setCacheDuration(duration) {

@@ -156,7 +156,7 @@ class TwitterUserActivity extends Activity {
 	}
 
 	getEntriesFromData(data) {
-		return data.data.filter(entry => {
+		return (data?.data || []).filter(entry => {
 			if(this.options.excludeReplies && this.isTweetReply(entry)) {
 				return false;
 			}

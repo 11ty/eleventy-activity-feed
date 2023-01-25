@@ -63,7 +63,8 @@ class Activity {
 
 	async getEntries() {
 		let data = await this.getData(this.getUrl(), this.getType());
-		let entries = this.getEntriesFromData(data).map((entry) => {
+		let dataEntries = this.getEntriesFromData(data) || [];
+		let entries = dataEntries.map((entry) => {
 			return new Promise(async (resolve) => {
 				let ret = await this.cleanEntry(entry, data);
 				if(this.label) {

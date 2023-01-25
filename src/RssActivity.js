@@ -15,10 +15,15 @@ class RssActivity extends Activity {
 	}
 
 	getEntriesFromData(data) {
-		if(Array.isArray(data.rss.channel.item)) {
+		if(Array.isArray(data.rss?.channel?.item)) {
 			return data.rss.channel.item;
 		}
-		return [data.rss.channel.item];
+
+		if(data.rss?.channel?.item) {
+			return [data.rss.channel.item];
+		}
+
+		return [];
 	}
 
 	cleanEntry(entry, data) {

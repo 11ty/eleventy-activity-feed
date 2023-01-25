@@ -15,7 +15,15 @@ class AtomActivity extends Activity {
 	}
 
 	getEntriesFromData(data) {
-		return data.feed?.entry || [];
+		if(Array.isArray(data.feed?.entry)) {
+			return data.feed.entry;
+		}
+
+		if(data.feed?.entry) {
+			return [data.feed.entry];
+		}
+
+		return [];
 	}
 
 	cleanEntry(entry, data) {

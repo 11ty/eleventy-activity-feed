@@ -12,6 +12,7 @@ feed.addSource("atom", "Blog", "https://www.11ty.dev/blog/feed.xml");
 
 // GitHub Releases
 feed.addSource("atom", "Releases", "https://github.com/11ty/eleventy/releases.atom");
+feed.addSource("atom", "Releases", "https://github.com/11ty/eleventy-base-plugin/releases.atom");
 
 // Mastodon
 // feed.addSource("rss", "Mastodon", "https://fediverse.zachleat.com/users/zachleat.rss");

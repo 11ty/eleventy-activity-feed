@@ -15,8 +15,9 @@ feed.addSource("atom", "Releases", "https://github.com/11ty/eleventy/releases.at
 
 // Mastodon
 // feed.addSource("rss", "Mastodon", "https://fediverse.zachleat.com/users/zachleat.rss");
+// feed.addSource("rss", "Bluesky", "https://bsky.app/profile/zachleat.com/rss");
 feed.addSource("rss", "Mastodon", "https://fosstodon.org/users/eleventy.rss");
-feed.addSource("rss", "Bluesky", "https://bsky.app/profile/zachleat.com/rss");
+feed.addSource("rss", "Bluesky", "https://bsky.app/profile/11ty.dev/rss");
 
 
 let content = await feed.toRssFeed({

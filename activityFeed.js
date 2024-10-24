@@ -1,7 +1,6 @@
 import { YouTubeUserActivity } from "./src/YouTubeUserActivity.js";
 import { AtomActivity } from "./src/AtomActivity.js";
 import { RssActivity } from "./src/RssActivity.js";
-import { TwitterUserActivity } from "./src/TwitterUserActivity.js";
 import pluginRss from "@11ty/eleventy-plugin-rss";
 
 
@@ -16,9 +15,7 @@ class ActivityFeed {
 
 	addSource(type, label, ...args) {
 		let cls;
-		if(type === "twitterUser") {
-			cls = TwitterUserActivity;
-		} else if(type === "youtubeUser") {
+		if(type === "youtubeUser") {
 			cls = YouTubeUserActivity;
 		} else if(type === "atom") {
 			cls = AtomActivity;

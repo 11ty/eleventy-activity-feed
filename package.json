@@ -1,7 +1,7 @@
 {
   "name": "@11ty/eleventy-activity-feed",
   "version": "1.0.9",
-  "description": "Create one centralized RSS feed for all of the content you create across the web (aggregates from Twitter, RSS, Atom, Mastodon, YouTube)",
+  "description": "Create one centralized RSS feed for all of the content you create across the web (aggregates from RSS, Atom, Mastodon, YouTube)",
   "main": "activityFeed.js",
   "type": "module",
   "scripts": {

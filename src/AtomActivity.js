@@ -46,6 +46,7 @@ class AtomActivity extends Activity {
 			},
 			published: entry.published || entry.updated,
 			updated: entry.updated,
+			content: entry.content["#text"],
 		}
 	}
 }

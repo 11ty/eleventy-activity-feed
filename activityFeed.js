@@ -1,8 +1,33 @@
-import { YouTubeUserActivity } from "./src/YouTubeUserActivity.js";
-import { AtomActivity } from "./src/AtomActivity.js";
-import { RssActivity } from "./src/RssActivity.js";
 import pluginRss from "@11ty/eleventy-plugin-rss";
+import TurndownService from "turndown";
 
+import { YouTubeUserActivity } from "./src/Activity/YouTubeUser.js";
+import { AtomActivity } from "./src/Activity/Atom.js";
+import { RssActivity } from "./src/Activity/Rss.js";
+import { WordPressApiActivity } from "./src/Activity/WordPressApi.js";
+
+const WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION = {
+	jscript: "js"
+};
+
+const turndownService = new TurndownService({
+	headingStyle: "atx",
+	bulletListMarker: "-",
+	codeBlockStyle: "fenced",
+	// preformattedCode: true,
+});
+
+turndownService.addRule("pre-without-code-to-fenced-codeblock", {
+	filter: ["pre"],
+	replacement: function(content, node, options) {
+		let brush = (node.getAttribute('class') || "").split(";").filter(entry => entry.startsWith("brush:"))
+		let language = (brush[0] || ":").split(":")[1].trim();
+
+		return `\`\`\`${WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION[language] || language}
+${content}
+\`\`\``;
+	}
+});
 
 class ActivityFeed {
 	constructor() {
@@ -21,6 +46,8 @@ class ActivityFeed {
 			cls = AtomActivity;
 		} else if(type === "rss") {
 			cls = RssActivity;
+		} else if(type === "wordpressapi") {
+			cls = WordPressApiActivity;
 		} else {
 			throw new Error(`${type} is not a supported activity type for addSource`);
 		}
@@ -34,7 +61,11 @@ class ActivityFeed {
 		this.sources.push(source);
 	}
 
-	async getEntries() {
+	static convertHtmlToMarkdown(html) {
+		return turndownService.turndown(html);
+	}
+
+	async getEntries(options = {}) {
 		let entries = [];
 		for(let source of this.sources) {
 			entries = [
@@ -45,6 +76,11 @@ class ActivityFeed {
 
 		entries = entries.map(entry => {
 			entry.published = new Date(Date.parse(entry.published));
+
+			if(options.contentType === "markdown" || options.contentType === "md") {
+				entry.content = turndownService.turndown(entry.content);
+			}
+
 			return entry;
 		});
 
@@ -75,11 +111,11 @@ class ActivityFeed {
 		${entries.map(entry => {
 			return `
 		<item>
-			<title>${entry.title}</title>
+			<title>${entry.label}: ${entry.title}</title>
 			<link>${entry.url}</link>
 			<description><![CDATA[${entry.content || ""}]]></description>
 			<pubDate>${pluginRss.dateToRfc822(entry.published)}</pubDate>
-			<dc:creator>${entry.author.name}</dc:creator>
+${entry.authors.map(author => `			<dc:creator>${author.name}</dc:creator>\n`)}
 			<guid>${entry.url}</guid>
 		</item>`;
 		}).join("\n")}

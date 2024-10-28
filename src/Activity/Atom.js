@@ -1,6 +1,8 @@
-import { Activity } from "./Activity.js";
+import { Activity } from "../Activity.js";
 
 class AtomActivity extends Activity {
+	static TYPE = "atom";
+
 	constructor(url) {
 		super();
 		this.url = url;
@@ -36,14 +38,28 @@ class AtomActivity extends Activity {
 		return entry.id;
 	}
 
+	getUniqueIdFromEntry(entry) {
+		// id is a unique URL
+		return `${Activity.UUID_PREFIX}::${AtomActivity.TYPE}::${entry.id}`;
+	}
+
 	cleanEntry(entry, data) {
+		let authors = [];
+		if(Array.isArray(entry?.author)) {
+			authors = entry.author.map(author => ({ name: author }));
+		} else {
+			authors.push({
+				name: entry?.author?.name || data.feed?.author?.name,
+			});
+		}
+
 		return {
-			type: "atom",
+			uuid: this.getUniqueIdFromEntry(entry),
+			type: AtomActivity.TYPE,
+			via: this.label,
 			title: entry.title,
 			url: this.getUrlFromEntry(entry),
-			author: {
-				name: entry?.author?.name || data.feed?.author?.name,
-			},
+			authors,
 			published: entry.published || entry.updated,
 			updated: entry.updated,
 			content: entry.content["#text"],

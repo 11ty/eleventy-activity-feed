@@ -19,12 +19,19 @@ feed.addSource("atom", "Releases", "https://github.com/11ty/eleventy/releases.at
 feed.addSource("rss", "Mastodon", "https://fosstodon.org/users/eleventy.rss");
 feed.addSource("rss", "Bluesky", "https://bsky.app/profile/11ty.dev/rss");
 
+// feed.addSource("rss", "WordPress", "https://baseline2024.wordpress.com/feed/");
 
-let content = await feed.toRssFeed({
-	title: "Eleventy’s Activity Feed",
-	language: "en",
-	url: "https://www.11ty.dev/follow/",
-	subtitle: "One centralized feed of Eleventy activity across the web.",
+feed.addSource("wordpressapi", "WordPress", "https://blog.fontawesome.com/");
+
+// let content = await feed.toRssFeed({
+// 	title: "Eleventy’s Activity Feed",
+// 	language: "en",
+// 	url: "https://www.11ty.dev/follow/",
+// 	subtitle: "One centralized feed of Eleventy activity across the web.",
+// });
+// console.log( content );
+
+let content = await feed.getEntries({
+	contentType: "markdown"
 });
 
-console.log( content );

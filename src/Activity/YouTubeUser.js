@@ -1,6 +1,8 @@
-import { Activity } from "./Activity.js";
+import { Activity } from "../Activity.js";
 
 class YouTubeUserActivity extends Activity {
+	static TYPE = "youtube";
+
 	constructor(channelId) {
 		super();
 		this.id = channelId;
@@ -18,15 +20,23 @@ class YouTubeUserActivity extends Activity {
 		return data.feed?.entry || [];
 	}
 
+	getUniqueIdFromEntry(entry) {
+		return `${Activity.UUID_PREFIX}::${YouTubeUserActivity.TYPE}::${entry['yt:videoId']}`;
+	}
+
 	cleanEntry(entry) {
 		return {
-			type: "youtube",
+			uuid: this.getUniqueIdFromEntry(entry),
+			type: YouTubeUserActivity.TYPE,
+			via: this.label,
 			title: entry.title,
 			url: `https://www.youtube.com/watch?v=${entry['yt:videoId']}`,
-			author: {
-				name: entry.author.name,
-				url: entry.author.uri,
-			},
+			authors: [
+				{
+					name: entry.author.name,
+					url: entry.author.uri,
+				}
+			],
 			published: entry.published,
 			updated: entry.updated,
 			// TODO linkify, nl2br

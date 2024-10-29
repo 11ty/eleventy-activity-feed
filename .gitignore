@@ -2,5 +2,4 @@
 .cache
 node_modules
 package-lock.json
-sample.rss
-sample-*
+tmp/

@@ -1,10 +1,14 @@
+import path from "node:path";
 import pluginRss from "@11ty/eleventy-plugin-rss";
 import TurndownService from "turndown";
+import fs from "graceful-fs";
+import yaml from "js-yaml";
 
 import { YouTubeUserActivity } from "./src/Activity/YouTubeUser.js";
 import { AtomActivity } from "./src/Activity/Atom.js";
 import { RssActivity } from "./src/Activity/Rss.js";
 import { WordPressApiActivity } from "./src/Activity/WordPressApi.js";
+import { HostedWordPressApiActivity } from "./src/Activity/HostedWordPressApi.js";
 
 const WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION = {
 	jscript: "js"
@@ -48,6 +52,8 @@ class ActivityFeed {
 			cls = RssActivity;
 		} else if(type === "wordpressapi") {
 			cls = WordPressApiActivity;
+		} else if(type === "wordpressapi-hosted") {
+			cls = HostedWordPressApiActivity;
 		} else {
 			throw new Error(`${type} is not a supported activity type for addSource`);
 		}
@@ -75,7 +81,9 @@ class ActivityFeed {
 		}
 
 		entries = entries.map(entry => {
-			entry.published = new Date(Date.parse(entry.published));
+			// create Date objects
+			entry.date = new Date(Date.parse(entry.date));
+			entry.dateUpdated = new Date(Date.parse(entry.dateUpdated));
 
 			if(options.contentType === "markdown" || options.contentType === "md") {
 				entry.content = turndownService.turndown(entry.content);
@@ -85,18 +93,80 @@ class ActivityFeed {
 		});
 
 		return entries.sort((a, b) => {
-			if(a.published < b.published) {
+			if(a.date < b.date) {
 				return 1;
 			}
-			if(a.published > b.published) {
+			if(a.date > b.date) {
 				return -1;
 			}
 			return 0;
 		});
 	}
 
-	async toRssFeed(metadata) {
-		let entries = await this.getEntries();
+	getDirectory(pathname) {
+		let dirs = pathname.split("/");
+		dirs.pop();
+		return dirs.join("/");
+	}
+
+	getPathname({ url, uuid }, options = {}) {
+		let { pathname } = new URL(url);
+
+		// For testing
+		pathname = `./tmp${pathname}`;
+
+		pathname = path.normalize(pathname);
+
+		if(pathname.endsWith("/")) {
+			return `${pathname.slice(0, -1)}.md`;
+		}
+
+		return `${pathname}.md`;
+	}
+
+	// TODO options.pathPrefix
+	toFiles(entries = [], options = {}) {
+		let dirs = {};
+		let filesCount = 0;
+
+		for(let entry of entries) {
+			// https://www.npmjs.com/package/js-yaml#dump-object---options-
+			let frontMatter = yaml.dump(entry, {
+				// sortKeys: true,
+				noCompatMode: true,
+				replacer: function(key, value) {
+					if(key === "content" || key === "dateUpdated") {
+						return;
+					}
+					return value;
+				}
+			});
+
+			let content = `---
+${frontMatter}---
+${entry.content}`
+
+			let pathname = this.getPathname(entry, options);
+			let dir = this.getDirectory(pathname);
+			if(!dirs[dir]) {
+				fs.mkdirSync(dir, { recursive: true })
+				dirs[dir] = true;
+			}
+
+			console.log( "Writing", pathname );
+			fs.writeFileSync(pathname, content, { recursive: true, encoding: "utf8" });
+			filesCount++;
+		}
+
+		return {
+			counts: {
+				files: filesCount,
+				directories: Object.keys(dirs).length,
+			}
+		};
+	}
+
+	async toRssFeed(entries, metadata = {}) {
 		let url = metadata.url?.home || metadata.url;
 		let feedUrl = metadata.url?.feed || url;
 
@@ -114,7 +184,7 @@ class ActivityFeed {
 			<title>${entry.label}: ${entry.title}</title>
 			<link>${entry.url}</link>
 			<description><![CDATA[${entry.content || ""}]]></description>
-			<pubDate>${pluginRss.dateToRfc822(entry.published)}</pubDate>
+			<pubDate>${pluginRss.dateToRfc822(entry.date)}</pubDate>
 ${entry.authors.map(author => `			<dc:creator>${author.name}</dc:creator>\n`)}
 			<guid>${entry.url}</guid>
 		</item>`;

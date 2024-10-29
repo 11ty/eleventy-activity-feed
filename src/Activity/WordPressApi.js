@@ -12,14 +12,26 @@ class WordPressApiActivity extends Activity {
 		return "json";
 	}
 
+	#getSubtypeUrl(subtype, suffix = "") {
+		return (new URL(`/wp-json/wp/v2/${subtype}/${suffix}`, this.url)).toString();
+	}
+
 	#getAuthorUrl(id) {
-		return (new URL(`/wp-json/wp/v2/users/${id}`, this.url)).toString();
+		return this.#getSubtypeUrl("users", id);
+	}
+
+	#getCategoryUrl(id) {
+		return this.#getSubtypeUrl("categories", id);
+	}
+
+	#getTagsUrl(id) {
+		return this.#getSubtypeUrl("tags", id);
 	}
 
 	getUrl() {
 		// return function for paging
 		return (pageNumber = 1) => {
-			return (new URL(`/wp-json/wp/v2/posts/?page=${pageNumber}&per_page=100`, this.url)).toString();
+			return this.#getSubtypeUrl("posts", `?page=${pageNumber}&per_page=100`);
 		};
 	}
 
@@ -39,32 +51,69 @@ class WordPressApiActivity extends Activity {
 		return `${Activity.UUID_PREFIX}::${WordPressApiActivity.TYPE}::${entry.guid.rendered}`;
 	}
 
-	async getAuthorData(authorId) {
-		return this.getData(this.#getAuthorUrl(authorId), this.getType());
+	// stock WordPress is single-author
+	async #getAuthors(authorId) {
+		// Warning: extra API call
+		let authorData = await this.getData(this.#getAuthorUrl(authorId), this.getType());
+
+		return [
+			{
+				// _wordpress_author_id: entry.author,
+				name: authorData.name,
+				url: authorData.url || authorData.link,
+				avatarUrl: authorData.avatar_urls[Object.keys(authorData.avatar_urls).pop()],
+			}
+		];
 	}
 
-	async cleanEntry(entry, data) {
-		// Warning: extra API call
-		let authorData = await this.getAuthorData(entry.author);
+	async #getTags(ids) {
+		return Promise.all(ids.map(tagId => {
+			// Warning: extra API call
+			return this.getData(this.#getTagsUrl(tagId), this.getType()).then(tagData => {
+				return tagData.name;
+			});
+		}));
+	}
 
-		return {
+	async #getCategories(ids) {
+		return Promise.all(ids.map(categoryId => {
+			// Warning: extra API call
+			return this.getData(this.#getCategoryUrl(categoryId), this.getType()).then(categoryData => {
+				return categoryData.name;
+			});
+		}));
+	}
+
+	// Supports: Title, Aluthor, Published/Updated Dates
+	async cleanEntry(entry, data) {
+		let obj = {
+			uuid: this.getUniqueIdFromEntry(entry),
 			type: WordPressApiActivity.TYPE,
 			via: this.label,
-			id: this.getUniqueIdFromEntry(entry),
 			title: entry.title?.rendered,
 			url: this.getUrlFromEntry(entry),
-			authors: [
-				{
-					// _wordpress_author_id: entry.author,
-					name: authorData.name,
-					url: authorData.url || authorData.link,
-					avatarUrl: authorData.avatar_urls[Object.keys(authorData.avatar_urls).pop()],
-				}
-			],
-			published: entry.date_gmt,
-			updated: entry.modified_gmt,
+			authors: await this.#getAuthors(entry.author),
+			date: entry.date_gmt,
+			dateUpdated: entry.modified_gmt,
 			content: entry.content.rendered,
+			status: this.cleanStatus(entry.status),
+			metadata: {
+				categories: await this.#getCategories(entry.categories),
+				tags: await this.#getTags(entry.tags),
+				featuredImage: entry.jetpack_featured_media_url,
+			},
+		};
+
+		if(entry.og_image) {
+			obj.metadata.opengraphImage = {
+				width: entry.og_image?.width,
+				height: entry.og_image?.height,
+				src: entry.og_image?.url,
+				mime: entry.og_image?.type,
+			}
 		}
+
+		return obj;
 	}
 }
 

@@ -37,8 +37,8 @@ class YouTubeUserActivity extends Activity {
 					url: entry.author.uri,
 				}
 			],
-			published: entry.published,
-			updated: entry.updated,
+			date: entry.published,
+			dateUpdated: entry.updated,
 			// TODO linkify, nl2br
 			content: entry['media:group']['media:description'],
 		}

@@ -60,8 +60,8 @@ class AtomActivity extends Activity {
 			title: entry.title,
 			url: this.getUrlFromEntry(entry),
 			authors,
-			published: entry.published || entry.updated,
-			updated: entry.updated,
+			date: entry.published || entry.updated,
+			dateUpdated: entry.updated,
 			content: entry.content["#text"],
 		}
 	}

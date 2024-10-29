@@ -37,7 +37,7 @@ npm install @11ty/eleventy-activity-feed
 * Use `follow-feed.11ty.js` in a CommonJS project
 
 ```js
-module.exports = class {
+export default class {
 	data() {
 		return {
 			// Controls where the file is written

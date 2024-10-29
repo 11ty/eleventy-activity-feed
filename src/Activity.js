@@ -11,7 +11,7 @@ const xmlParser = new XMLParser({
 class Activity {
 	static UUID_PREFIX = "11tyaf";
 
-	log(...messages) {
+	static log(...messages) {
 		console.log(...messages)
 	}
 
@@ -86,6 +86,16 @@ class Activity {
 		return result;
 	}
 
+	async #getCleanedEntries(url) {
+		let entries = [];
+		let data = await this.getData(url, this.getType());
+		for(let entry of this.getEntriesFromData(data) || []) {
+			let cleaned = await this.cleanEntry(entry, data);
+			entries.push(cleaned);
+		}
+		return entries;
+	}
+
 	async getEntries() {
 		let url = this.getUrl();
 		let entries = [];
@@ -95,23 +105,42 @@ class Activity {
 
 			try {
 				while(pagedUrl = url(pageNumber)) {
-					this.log( `Fetching page ${pageNumber}: ${pagedUrl}` );
-					let data = await this.getData(pagedUrl, this.getType());
-					for(let entry of this.getEntriesFromData(data) || []) {
-						let cleaned = await this.cleanEntry(entry, data);
-						entries.push(cleaned);
+					Activity.log( `Fetching page ${pageNumber}: ${pagedUrl}` );
+					let found = 0;
+					for(let entry of await this.#getCleanedEntries(pagedUrl)) {
+						entries.push(entry);
+						found++;
+					}
+					if(found === 0) {
+						break;
 					}
 
 					pageNumber++;
-					if(pageNumber > 3) {
-						break;
-					}
 				}
 			} catch(e) {
-				this.log( `Finished: ${e.message}` );
+				if(e.cause instanceof Response) {
+					let errorData = await e.cause.json();
+					if(errorData?.code === "rest_post_invalid_page_number") {
+						// Last page, do nothing.
+					} else {
+						Activity.log("Error: " + e.message)
+					}
+				} else {
+					Activity.log("Error: " + e.message)
+				}
+			}
+		} else if(typeof url === "string" || url instanceof URL) {
+			for(let entry of await this.#getCleanedEntries(url) || []) {
+				entries.push(entry);
 			}
 		}
 		return entries;
+	}
+
+	cleanStatus(status) {
+		return {
+			"publish": "published"
+		}[status];
 	}
 }
 

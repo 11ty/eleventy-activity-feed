@@ -56,7 +56,6 @@ class AtomActivity extends Activity {
 		return {
 			uuid: this.getUniqueIdFromEntry(entry),
 			type: AtomActivity.TYPE,
-			via: this.label,
 			title: entry.title,
 			url: this.getUrlFromEntry(entry),
 			authors,

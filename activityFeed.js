@@ -3,12 +3,15 @@ import pluginRss from "@11ty/eleventy-plugin-rss";
 import TurndownService from "turndown";
 import fs from "graceful-fs";
 import yaml from "js-yaml";
+import kleur from 'kleur';
 
 import { YouTubeUserActivity } from "./src/Activity/YouTubeUser.js";
 import { AtomActivity } from "./src/Activity/Atom.js";
 import { RssActivity } from "./src/Activity/Rss.js";
 import { WordPressApiActivity } from "./src/Activity/WordPressApi.js";
 import { HostedWordPressApiActivity } from "./src/Activity/HostedWordPressApi.js";
+import { BlueskyUserActivity } from "./src/Activity/BlueskyUser.js";
+import { FediverseUserActivity } from "./src/Activity/FediverseUserActivity.js";
 
 const WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION = {
 	jscript: "js"
@@ -42,9 +45,11 @@ class ActivityFeed {
 		this.cacheDuration = duration;
 	}
 
-	addSource(type, label, ...args) {
+	addSource(type, options = {}) {
+		type = type?.toLowerCase();
+
 		let cls;
-		if(type === "youtubeUser") {
+		if(type === "youtubeuser") {
 			cls = YouTubeUserActivity;
 		} else if(type === "atom") {
 			cls = AtomActivity;
@@ -52,16 +57,40 @@ class ActivityFeed {
 			cls = RssActivity;
 		} else if(type === "wordpressapi") {
 			cls = WordPressApiActivity;
-		} else if(type === "wordpressapi-hosted") {
-			cls = HostedWordPressApiActivity;
+		} else if(type === "bluesky") {
+			cls = BlueskyUserActivity; // RSS
+		} else if(type === "fediverse") {
+			cls = FediverseUserActivity; // RSS
 		} else {
 			throw new Error(`${type} is not a supported activity type for addSource`);
 		}
 
-		let source = new cls(...args);
-		source.setLabel(label);
-		if(this.cacheDuration) {
-			source.setCacheDuration(this.cacheDuration);
+		let identifier;
+		let label;
+		let cacheDuration = this.cacheDuration;
+		let filepathFormat;
+
+		if(typeof options === "string") {
+			identifier = options;
+		} else {
+			identifier = options.url || options.id;
+			label = options.label;
+			cacheDuration = options.cacheDuration;
+			filepathFormat = options.filepathFormat;
+		}
+
+		let source = new cls(identifier);
+
+		if(label) {
+			source.setLabel(label);
+		}
+
+		if(cacheDuration) {
+			source.setCacheDuration(cacheDuration);
+		}
+
+		if(filepathFormat) {
+			source.setFilepathFormatFunction(filepathFormat);
 		}
 
 		this.sources.push(source);
@@ -74,25 +103,18 @@ class ActivityFeed {
 	async getEntries(options = {}) {
 		let entries = [];
 		for(let source of this.sources) {
-			entries = [
-				...entries,
-				...await source.getEntries(),
-			]
+			for(let entry of await source.getEntries()) {
+				entries.push(entry);
+			}
 		}
 
-		entries = entries.map(entry => {
-			// create Date objects
-			entry.date = new Date(Date.parse(entry.date));
-			entry.dateUpdated = new Date(Date.parse(entry.dateUpdated));
-
+		return entries.map(entry => {
 			if(options.contentType === "markdown" || options.contentType === "md") {
 				entry.content = turndownService.turndown(entry.content);
 			}
 
 			return entry;
-		});
-
-		return entries.sort((a, b) => {
+		}).sort((a, b) => {
 			if(a.date < b.date) {
 				return 1;
 			}
@@ -109,25 +131,47 @@ class ActivityFeed {
 		return dirs.join("/");
 	}
 
-	getPathname({ url, uuid }, options = {}) {
-		let { pathname } = new URL(url);
+	getFilePath(entry, options = {}) {
+		let { url } = entry;
 
-		// For testing
-		pathname = `./tmp${pathname}`;
-
-		pathname = path.normalize(pathname);
-
-		if(pathname.endsWith("/")) {
-			return `${pathname.slice(0, -1)}.md`;
+		let source = entry.source;
+		// prefer addSource override, then fallback to type default
+		let fallbackPath;
+		let hasFilePathFallback = typeof source?.constructor?.getFilePath === "function";
+		if(hasFilePathFallback) {
+			fallbackPath = source?.constructor?.getFilePath(url);
+		} else {
+			fallbackPath = (new URL(url)).pathname;
 		}
 
-		return `${pathname}.md`;
+		let outputOverrideFn = source?.getFilepathFormatFunction();
+		if(outputOverrideFn && typeof outputOverrideFn === "function") { // entry override
+			let pathname = outputOverrideFn(url, fallbackPath);
+			if(pathname === false) {
+				return false;
+			}
+
+			// does *not* add a file extension for you
+			return path.join(".", pathname);
+		}
+
+		let subdir = source?.constructor?.INCLUDE_TYPE_IN_PATH ? source?.constructor?.TYPE : "";
+		let pathname = path.join(".", subdir, path.normalize(fallbackPath));
+
+		let extension = options.contentType === "markdown" || options.contentType === "md" ? ".md" : ".html";
+
+		if(pathname.endsWith("/")) {
+			return `${pathname.slice(0, -1)}${extension}`;
+		}
+
+		return `${pathname}${extension}`;
 	}
 
 	// TODO options.pathPrefix
 	toFiles(entries = [], options = {}) {
-		let dirs = {};
-		let filesCount = 0;
+		let dirsCreated = {};
+		let filepathConflicts = {};
+		let filesWrittenCount = 0;
 
 		for(let entry of entries) {
 			// https://www.npmjs.com/package/js-yaml#dump-object---options-
@@ -146,22 +190,35 @@ class ActivityFeed {
 ${frontMatter}---
 ${entry.content}`
 
-			let pathname = this.getPathname(entry, options);
+			let pathname = this.getFilePath(entry, options);
+			if(pathname === false) {
+				continue;
+			}
+			if(filepathConflicts[pathname]) {
+				throw new Error(`Multiple entries attempted to write to the same place: ${pathname} (originally via ${filepathConflicts[pathname]})`);
+			}
+			filepathConflicts[pathname] = entry.url || true;
+
 			let dir = this.getDirectory(pathname);
-			if(!dirs[dir]) {
-				fs.mkdirSync(dir, { recursive: true })
-				dirs[dir] = true;
+			if(!dirsCreated[dir]) {
+				if(!options.dryRun) {
+					fs.mkdirSync(dir, { recursive: true })
+				}
+
+				dirsCreated[dir] = true;
 			}
 
-			console.log( "Writing", pathname );
-			fs.writeFileSync(pathname, content, { recursive: true, encoding: "utf8" });
-			filesCount++;
+			console.log(kleur.gray("Importing"), entry.url, kleur.gray("to"), pathname, options.dryRun ? kleur.gray("(dry run)") : "");
+			if(!options.dryRun) {
+				fs.writeFileSync(pathname, content, { recursive: true, encoding: "utf8" });
+			}
+			filesWrittenCount++;
 		}
 
 		return {
 			counts: {
-				files: filesCount,
-				directories: Object.keys(dirs).length,
+				files: filesWrittenCount,
+				directories: Object.keys(dirsCreated).length,
 			}
 		};
 	}

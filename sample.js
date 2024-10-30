@@ -1,3 +1,4 @@
+import path from "node:path";
 import { ActivityFeed } from "./activityFeed.js";
 
 let feed = new ActivityFeed();
@@ -5,29 +6,40 @@ let feed = new ActivityFeed();
 feed.setCacheDuration("4h");
 
 // YouTube
-// feed.addSource("youtubeUser", "YouTube", "UCskGTioqrMBcw8pd14_334A");
+feed.addSource("youtubeUser", "UCskGTioqrMBcw8pd14_334A");
 
 // Blog
-// feed.addSource("atom", "11ty Blog", "https://www.11ty.dev/blog/feed.xml");
+feed.addSource("atom", "https://www.11ty.dev/blog/feed.xml");
 
 // GitHub Releases
-// feed.addSource("atom", "GitHub Releases", "https://github.com/11ty/eleventy/releases.atom");
+feed.addSource("atom",{
+	url: "https://github.com/11ty/eleventy/releases.atom",
+	filepathFormat: (url) => `/11ty/releases/${url.split("/").pop()}.md`,
+});
 
-// Social RSS feeds
-// feed.addSource("rss", "Mastodon", "https://fediverse.zachleat.com/users/zachleat.rss");
-feed.addSource("rss", "Bluesky", "https://bsky.app/profile/zachleat.com/rss");
-// feed.addSource("rss", "Mastodon", "https://fosstodon.org/users/eleventy.rss");
-// feed.addSource("rss", "Bluesky", "https://bsky.app/profile/11ty.dev/rss");
-// feed.addSource("rss", "WordPress", "https://baseline2024.wordpress.com/feed/");
+// Social RSS feeds (limited historical content)
+feed.addSource("fediverse", "zachleat@fediverse.zachleat.com");
+feed.addSource("fediverse", "eleventy@fosstodon.org");
 
-// feed.addSource("wordpressapi", "WordPress", "https://blog.fontawesome.com/");
-feed.addSource("wordpressapi-hosted", "WordPress", "https://baseline2024.wordpress.com/");
+feed.addSource("rss", "https://fosstodon.org/users/eleventy.rss");
+
+feed.addSource("bluesky", "zachleat.com");
+feed.addSource("bluesky", "11ty.dev");
+
+// WordPress blogs
+feed.addSource("wordpressApi", "https://blog.fontawesome.com/");
+
+// feed.addSource("rss", "https://baseline2024.wordpress.com/feed/");
+feed.addSource("wordpressApi", "https://baseline2024.wordpress.com/");
 
 let entries = await feed.getEntries({
 	contentType: "markdown"
 });
 
-let { counts } = feed.toFiles(entries);
+let { counts } = feed.toFiles(entries, {
+	dryRun: true,
+	contentType: "markdown"
+});
 console.log( `Directories: ${counts.directories}` );
 console.log( `Files: ${counts.files}` );
 

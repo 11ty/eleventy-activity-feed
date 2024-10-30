@@ -1,9 +1,14 @@
 import { Activity } from "../Activity.js";
+import { HostedWordPressApiActivity } from "./HostedWordPressApi.js"
 
 class WordPressApiActivity extends Activity {
 	static TYPE = "wordpressapi";
 
 	constructor(url) {
+		if(HostedWordPressApiActivity.isValid(url)) {
+			return new HostedWordPressApiActivity(url);
+		}
+
 		super();
 		this.url = url;
 	}
@@ -89,7 +94,6 @@ class WordPressApiActivity extends Activity {
 		let obj = {
 			uuid: this.getUniqueIdFromEntry(entry),
 			type: WordPressApiActivity.TYPE,
-			via: this.label,
 			title: entry.title?.rendered,
 			url: this.getUrlFromEntry(entry),
 			authors: await this.#getAuthors(entry.author),

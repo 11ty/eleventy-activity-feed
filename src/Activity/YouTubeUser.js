@@ -2,10 +2,11 @@ import { Activity } from "../Activity.js";
 
 class YouTubeUserActivity extends Activity {
 	static TYPE = "youtube";
+	static INCLUDE_TYPE_IN_PATH = true;
 
 	constructor(channelId) {
 		super();
-		this.id = channelId;
+		this.channelId = channelId;
 	}
 
 	getType() {
@@ -13,7 +14,7 @@ class YouTubeUserActivity extends Activity {
 	}
 
 	getUrl() {
-		return `https://www.youtube.com/feeds/videos.xml?channel_id=${this.id}`
+		return `https://www.youtube.com/feeds/videos.xml?channel_id=${this.channelId}`
 	}
 
 	getEntriesFromData(data) {
@@ -24,11 +25,15 @@ class YouTubeUserActivity extends Activity {
 		return `${Activity.UUID_PREFIX}::${YouTubeUserActivity.TYPE}::${entry['yt:videoId']}`;
 	}
 
+	static getFilePath(url) {
+		let { searchParams } = new URL(url);
+		return searchParams.get("v");
+	}
+
 	cleanEntry(entry) {
 		return {
 			uuid: this.getUniqueIdFromEntry(entry),
 			type: YouTubeUserActivity.TYPE,
-			via: this.label,
 			title: entry.title,
 			url: `https://www.youtube.com/watch?v=${entry['yt:videoId']}`,
 			authors: [

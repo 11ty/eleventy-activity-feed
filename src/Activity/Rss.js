@@ -51,7 +51,6 @@ class RssActivity extends Activity {
 		return {
 			uuid: this.getUniqueIdFromEntry(entry),
 			type: RssActivity.TYPE,
-			via: this.label,
 			title: entry.title || this.toReadableDate(entry.pubDate),
 			url: entry.link,
 			authors,

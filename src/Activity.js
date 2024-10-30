@@ -1,3 +1,4 @@
+import kleur from 'kleur';
 import EleventyFetch from "@11ty/eleventy-fetch";
 import { XMLParser } from "fast-xml-parser";
 
@@ -11,12 +12,27 @@ const xmlParser = new XMLParser({
 class Activity {
 	static UUID_PREFIX = "11tyaf";
 
+	constructor() {
+		this.fetchedUrls = new Set();
+	}
+
 	static log(...messages) {
 		console.log(...messages)
 	}
 
 	setLabel(label) {
 		this.label = label;
+	}
+
+	setFilepathFormatFunction(format) {
+		if(typeof format !== "function") {
+			throw new Error("filepathFormat option expected to be a function.");
+		}
+		this.filepathFormat = format;
+	}
+
+	getFilepathFormatFunction() {
+		return this.filepathFormat;
 	}
 
 	isValidHttpUrl(url) {
@@ -56,7 +72,7 @@ class Activity {
 		return {};
 	}
 
-	getUniqueIdFromEntry(entry) {
+	getUniqueIdFromEntry() {
 		return "";
 	}
 
@@ -69,6 +85,11 @@ class Activity {
 	}
 
 	async getData(url, type) {
+		if(!this.fetchedUrls.has(url)) {
+			Activity.log(kleur.gray("Fetching"), url);
+			this.fetchedUrls.add(url);
+		}
+
 		let result = EleventyFetch(url, {
 			duration: this.cacheDuration || "0s",
 			type: type === "json" ? type : "text",
@@ -105,7 +126,6 @@ class Activity {
 
 			try {
 				while(pagedUrl = url(pageNumber)) {
-					Activity.log( `Fetching page ${pageNumber}: ${pagedUrl}` );
 					let found = 0;
 					for(let entry of await this.#getCleanedEntries(pagedUrl)) {
 						entries.push(entry);
@@ -123,10 +143,10 @@ class Activity {
 					if(errorData?.code === "rest_post_invalid_page_number") {
 						// Last page, do nothing.
 					} else {
-						Activity.log("Error: " + e.message)
+						Activity.log(kleur.red(`Error: ${e.message}`));
 					}
 				} else {
-					Activity.log("Error: " + e.message)
+					Activity.log(kleur.red(`Error: ${e.message}`));
 				}
 			}
 		} else if(typeof url === "string" || url instanceof URL) {
@@ -134,7 +154,30 @@ class Activity {
 				entries.push(entry);
 			}
 		}
-		return entries;
+
+		return entries.map(entry => {
+			// TODO check uuid uniqueness
+
+			if(this.label) {
+				entry.sourceLabel = this.label;
+			}
+
+			// create Date objects
+			if(entry.date) {
+				entry.date = new Date(Date.parse(entry.date));
+			}
+
+			if(entry.dateUpdated) {
+				entry.dateUpdated = new Date(Date.parse(entry.dateUpdated));
+			}
+
+			Object.defineProperty(entry, "source", {
+				enumerable: false,
+				value: this,
+			});
+
+			return entry;
+		});
 	}
 
 	cleanStatus(status) {

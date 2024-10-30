@@ -3,23 +3,28 @@ import { Activity } from "../Activity.js";
 class HostedWordPressApiActivity extends Activity {
 	static TYPE = "wordpressapi-hosted";
 
-	constructor(url) {
-		super();
-		this.url = url;
-
-		let hostname = this.#getHostname(url);
-		if(!hostname.endsWith(".wordpress.com")) {
-			throw new Error("HostedWordPressApiActivity expects a .wordpress.com URL, if you’re looking to use a self-hosted WordPress API please use the `wordpressapi` type (`WordPressApiActivity` class).");
-		}
-		this.hostname = hostname;
-	}
-
-	#getHostname(url) {
+	static #getHostname(url) {
 		try {
 			let u = new URL(url);
 			return u.hostname;
 		} catch(e) {}
 		return "";
+	}
+
+	static isValid(url) {
+		let hostname = this.#getHostname(url);
+		return hostname.endsWith(".wordpress.com");
+	}
+
+	constructor(url) {
+		super();
+		this.url = url;
+
+		if(!HostedWordPressApiActivity.isValid(url)) {
+			throw new Error("HostedWordPressApiActivity expects a .wordpress.com URL, if you’re looking to use a self-hosted WordPress API please use the `wordpressapi` type (`WordPressApiActivity` class).");
+		}
+
+		this.hostname = HostedWordPressApiActivity.#getHostname(url);
 	}
 
 	getType() {
@@ -60,7 +65,6 @@ class HostedWordPressApiActivity extends Activity {
 		return {
 			uuid: this.getUniqueIdFromEntry(entry),
 			type: HostedWordPressApiActivity.TYPE,
-			via: this.label,
 			title: entry.title,
 			url: this.getUrlFromEntry(entry),
 			authors: this.#getAuthorData(entry.author),

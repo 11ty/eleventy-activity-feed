@@ -200,7 +200,7 @@ ${entry.content}`
 			filepathConflicts[pathname] = entry.url || true;
 
 			let dir = this.getDirectory(pathname);
-			if(!dirsCreated[dir]) {
+			if(dir && !dirsCreated[dir]) {
 				if(!options.dryRun) {
 					fs.mkdirSync(dir, { recursive: true })
 				}

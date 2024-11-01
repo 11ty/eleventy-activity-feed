@@ -218,6 +218,7 @@ class ActivityFeed {
 			if(entry.status === "draft") {
 				// Don’t write to file system in Eleventy
 				frontMatterData.permalink = false;
+				frontMatterData.draft = true;
 			}
 
 			// https://www.npmjs.com/package/js-yaml#dump-object---options-

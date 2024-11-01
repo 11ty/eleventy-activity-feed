@@ -4,6 +4,7 @@ import { HostedWordPressApiActivity } from "./HostedWordPressApi.js"
 
 class WordPressApiActivity extends Activity {
 	static TYPE = "wordpressapi";
+	static IGNORED_CATEGORIES = ["Uncategorized"];
 
 	constructor(url) {
 		if(HostedWordPressApiActivity.isValid(url)) {
@@ -99,16 +100,34 @@ class WordPressApiActivity extends Activity {
 	}
 
 	async #getCategories(ids) {
-		return Promise.all(ids.map(categoryId => {
+		let categoryNames = await Promise.all(ids.map(categoryId => {
 			// Warning: extra API call
 			return this.getData(this.#getCategoryUrl(categoryId), this.getType()).then(categoryData => {
 				return categoryData.name;
 			});
 		}));
+
+		return categoryNames.filter(name => {
+			return !WordPressApiActivity.IGNORED_CATEGORIES.includes(name);
+		});
 	}
 
 	// Supports: Title, Aluthor, Published/Updated Dates
 	async cleanEntry(entry, data) {
+		let metadata = {
+			featuredImage: entry.jetpack_featured_media_url,
+		};
+
+		let categories = await this.#getCategories(entry.categories);
+		if(categories.length) {
+			metadata.categories = categories;
+		}
+
+		let tags = await this.#getTags(entry.tags);
+		if(tags.length) {
+			metadata.tags = tags;
+		}
+
 		let obj = {
 			uuid: this.getUniqueIdFromEntry(entry),
 			type: WordPressApiActivity.TYPE,
@@ -119,11 +138,7 @@ class WordPressApiActivity extends Activity {
 			dateUpdated: entry.modified_gmt,
 			content: entry.content.rendered,
 			status: this.cleanStatus(entry.status),
-			metadata: {
-				categories: await this.#getCategories(entry.categories),
-				tags: await this.#getTags(entry.tags),
-				featuredImage: entry.jetpack_featured_media_url,
-			},
+			metadata,
 		};
 
 		if(entry.og_image) {

@@ -2,7 +2,6 @@ import { Activity } from "../Activity.js";
 
 class YouTubeUserActivity extends Activity {
 	static TYPE = "youtube";
-	static INCLUDE_TYPE_IN_PATH = true;
 
 	constructor(channelId) {
 		super();

@@ -1,48 +1,71 @@
 import path from "node:path";
+import { createHash } from "node:crypto";
 import pluginRss from "@11ty/eleventy-plugin-rss";
 import TurndownService from "turndown";
 import fs from "graceful-fs";
 import yaml from "js-yaml";
-import kleur from 'kleur';
+import kleur from "kleur";
+import {filesize} from "filesize";
 
 import { YouTubeUserActivity } from "./src/Activity/YouTubeUser.js";
 import { AtomActivity } from "./src/Activity/Atom.js";
 import { RssActivity } from "./src/Activity/Rss.js";
 import { WordPressApiActivity } from "./src/Activity/WordPressApi.js";
-import { HostedWordPressApiActivity } from "./src/Activity/HostedWordPressApi.js";
 import { BlueskyUserActivity } from "./src/Activity/BlueskyUser.js";
 import { FediverseUserActivity } from "./src/Activity/FediverseUserActivity.js";
+
+const HASH_FILENAME_MAXLENGTH = 12;
 
 const WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION = {
 	jscript: "js"
 };
 
-const turndownService = new TurndownService({
-	headingStyle: "atx",
-	bulletListMarker: "-",
-	codeBlockStyle: "fenced",
-	// preformattedCode: true,
-});
-
-turndownService.addRule("pre-without-code-to-fenced-codeblock", {
-	filter: ["pre"],
-	replacement: function(content, node, options) {
-		let brush = (node.getAttribute('class') || "").split(";").filter(entry => entry.startsWith("brush:"))
-		let language = (brush[0] || ":").split(":")[1].trim();
-
-		return `\`\`\`${WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION[language] || language}
-${content}
-\`\`\``;
-	}
-});
-
 class ActivityFeed {
+	#draftsFolder = "drafts";
+	#outputFolder = ".";
+	#cacheDuration = "0s";
+	#turndownService = null;
+
 	constructor() {
 		this.sources = [];
 	}
 
+	setDraftsFolder(dir) {
+		this.#draftsFolder = dir;
+	}
+
+	setOutputFolder(dir) {
+		this.#outputFolder = dir;
+	}
+
 	setCacheDuration(duration) {
-		this.cacheDuration = duration;
+		this.#cacheDuration = duration;
+	}
+
+
+	get turndownService() {
+		if(!this.#turndownService) {
+			this.#turndownService = new TurndownService({
+				headingStyle: "atx",
+				bulletListMarker: "-",
+				codeBlockStyle: "fenced",
+				// preformattedCode: true,
+			});
+
+			this.#turndownService.addRule("pre-without-code-to-fenced-codeblock", {
+				filter: ["pre"],
+				replacement: function(content, node) {
+					let brush = (node.getAttribute("class") || "").split(";").filter(entry => entry.startsWith("brush:"))
+					let language = (brush[0] || ":").split(":")[1].trim();
+
+					return `\`\`\`${WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION[language] || language}
+			${content}
+			\`\`\``;
+				}
+			});
+		}
+
+		return this.#turndownService;
 	}
 
 	addSource(type, options = {}) {
@@ -67,7 +90,7 @@ class ActivityFeed {
 
 		let identifier;
 		let label;
-		let cacheDuration = this.cacheDuration;
+		let cacheDuration = this.#cacheDuration;
 		let filepathFormat;
 
 		if(typeof options === "string") {
@@ -96,8 +119,8 @@ class ActivityFeed {
 		this.sources.push(source);
 	}
 
-	static convertHtmlToMarkdown(html) {
-		return turndownService.turndown(html);
+	convertHtmlToMarkdown(html) {
+		return this.turndownService.turndown(html);
 	}
 
 	async getEntries(options = {}) {
@@ -109,8 +132,12 @@ class ActivityFeed {
 		}
 
 		return entries.map(entry => {
-			if(options.contentType === "markdown" || options.contentType === "md") {
-				entry.content = turndownService.turndown(entry.content);
+			if(options.contentType === "markdown") {
+				entry.content = this.convertHtmlToMarkdown(entry.content);
+			}
+
+			if(options.contentType) {
+				entry.contentType = options.contentType;
 			}
 
 			return entry;
@@ -131,11 +158,12 @@ class ActivityFeed {
 		return dirs.join("/");
 	}
 
-	getFilePath(entry, options = {}) {
+	getFilePath(entry) {
 		let { url } = entry;
 
 		let source = entry.source;
-		// prefer addSource override, then fallback to type default
+
+		// prefer addSource specific override, then fallback to ActivityType default
 		let fallbackPath;
 		let hasFilePathFallback = typeof source?.constructor?.getFilePath === "function";
 		if(hasFilePathFallback) {
@@ -152,13 +180,24 @@ class ActivityFeed {
 			}
 
 			// does *not* add a file extension for you
-			return path.join(".", pathname);
+			return path.join(this.#outputFolder, pathname);
 		}
 
-		let subdir = source?.constructor?.INCLUDE_TYPE_IN_PATH ? source?.constructor?.TYPE : "";
-		let pathname = path.join(".", subdir, path.normalize(fallbackPath));
+		// WordPress drafts only have a UUID query param e.g. ?p=ID_NUMBER
+		if(fallbackPath === "/") {
+			fallbackPath = createHash("sha256").update(entry.url).digest("base64").replace(/[^A-Z0-9]/gi, "").slice(0, HASH_FILENAME_MAXLENGTH);
+		}
 
-		let extension = options.contentType === "markdown" || options.contentType === "md" ? ".md" : ".html";
+		let subdirs = [];
+		if(this.#outputFolder) {
+			subdirs.push(this.#outputFolder);
+		}
+		if(this.#draftsFolder && entry.status === "draft") {
+			subdirs.push(this.#draftsFolder);
+		}
+
+		let pathname = path.join(".", ...subdirs, path.normalize(fallbackPath));
+		let extension = entry.contentType === "markdown" ? ".md" : ".html";
 
 		if(pathname.endsWith("/")) {
 			return `${pathname.slice(0, -1)}${extension}`;
@@ -174,14 +213,23 @@ class ActivityFeed {
 		let filesWrittenCount = 0;
 
 		for(let entry of entries) {
+			let frontMatterData = Object.assign({}, entry);
+
+			if(entry.status === "draft") {
+				// Don’t write to file system in Eleventy
+				frontMatterData.permalink = false;
+			}
+
 			// https://www.npmjs.com/package/js-yaml#dump-object---options-
-			let frontMatter = yaml.dump(entry, {
+			let frontMatter = yaml.dump(frontMatterData, {
 				// sortKeys: true,
 				noCompatMode: true,
 				replacer: function(key, value) {
-					if(key === "content" || key === "dateUpdated") {
+					// ignore these keys in front matter
+					if(key === "content" || key === "contentType" || key === "dateUpdated") {
 						return;
 					}
+
 					return value;
 				}
 			});
@@ -190,10 +238,11 @@ class ActivityFeed {
 ${frontMatter}---
 ${entry.content}`
 
-			let pathname = this.getFilePath(entry, options);
+			let pathname = this.getFilePath(entry);
 			if(pathname === false) {
 				continue;
 			}
+
 			if(filepathConflicts[pathname]) {
 				throw new Error(`Multiple entries attempted to write to the same place: ${pathname} (originally via ${filepathConflicts[pathname]})`);
 			}
@@ -208,7 +257,9 @@ ${entry.content}`
 				dirsCreated[dir] = true;
 			}
 
-			console.log(kleur.gray("Importing"), entry.url, kleur.gray("to"), pathname, options.dryRun ? kleur.gray("(dry run)") : "");
+			console.log(kleur.gray("Importing"), entry.url, kleur.gray("to"), pathname, kleur.gray(`(${filesize(content.length, {
+				spacer: ""
+			})}${options.dryRun ? ", dry run" : ""})`));
 			if(!options.dryRun) {
 				fs.writeFileSync(pathname, content, { recursive: true, encoding: "utf8" });
 			}

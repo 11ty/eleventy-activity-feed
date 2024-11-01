@@ -3,7 +3,6 @@ import { Activity } from "../Activity.js";
 
 class FediverseUserActivity extends Activity {
 	static TYPE = "fediverse";
-	static INCLUDE_TYPE_IN_PATH = true;
 
 	constructor(fullUsername) {
 		super();

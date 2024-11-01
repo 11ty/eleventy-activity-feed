@@ -1,9 +1,11 @@
-import path from "node:path";
-import { ActivityFeed } from "./activityFeed.js";
+import kleur from "kleur";
+import { ActivityFeed } from "./ActivityFeed.js";
 
 let feed = new ActivityFeed();
 
 feed.setCacheDuration("4h");
+// feed.setDraftsFolder("drafts");
+feed.setOutputFolder("dist");
 
 // YouTube
 feed.addSource("youtubeUser", "UCskGTioqrMBcw8pd14_334A");
@@ -37,11 +39,10 @@ let entries = await feed.getEntries({
 });
 
 let { counts } = feed.toFiles(entries, {
-	dryRun: true,
-	contentType: "markdown"
+	dryRun: true, // don’t write anything
 });
-console.log( `Directories: ${counts.directories}` );
-console.log( `Files: ${counts.files}` );
+
+console.log( `${kleur.gray("Imported")} ×${counts.files}` );
 
 // let feedContent = await feed.toRssFeed(entries, {
 // 	title: "Eleventy’s Activity Feed",

@@ -85,8 +85,12 @@ class Activity {
 	}
 
 	async getData(url, type) {
+		let headers = Object.assign({
+			"user-agent": "Eleventy Activity Feed v1.0.0",
+		}, this.getHeaders());
+
 		if(!this.fetchedUrls.has(url)) {
-			Activity.log(kleur.gray("Fetching"), url);
+			Activity.log(kleur.gray("Fetching"), url, Boolean(headers.Authorization) ? kleur.blue("(Auth)") : "" );
 			this.fetchedUrls.add(url);
 		}
 
@@ -94,9 +98,7 @@ class Activity {
 			duration: this.cacheDuration || "0s",
 			type: type === "json" ? type : "text",
 			fetchOptions: {
-				headers: Object.assign({
-					"user-agent": "Eleventy Activity Feed v1.0.0",
-				}, this.getHeaders()),
+				headers,
 			}
 		});
 
@@ -110,6 +112,7 @@ class Activity {
 	async #getCleanedEntries(url) {
 		let entries = [];
 		let data = await this.getData(url, this.getType());
+
 		for(let entry of this.getEntriesFromData(data) || []) {
 			let cleaned = await this.cleanEntry(entry, data);
 			entries.push(cleaned);
@@ -143,10 +146,10 @@ class Activity {
 					if(errorData?.code === "rest_post_invalid_page_number") {
 						// Last page, do nothing.
 					} else {
-						Activity.log(kleur.red(`Error: ${e.message}`));
+						Activity.log(kleur.red(`Error: ${e.message}`), errorData);
 					}
 				} else {
-					Activity.log(kleur.red(`Error: ${e.message}`));
+					Activity.log(kleur.red(`Error: ${e.message}`), e);
 				}
 			}
 		} else if(typeof url === "string" || url instanceof URL) {
@@ -181,9 +184,9 @@ class Activity {
 	}
 
 	cleanStatus(status) {
-		return {
-			"publish": "published"
-		}[status];
+		// WordPress has draft/publish
+		// For future use
+		return status;
 	}
 }
 

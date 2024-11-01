@@ -3,7 +3,6 @@ import { Activity } from "../Activity.js";
 
 class BlueskyUserActivity extends Activity {
 	static TYPE = "bluesky";
-	static INCLUDE_TYPE_IN_PATH = true;
 
 	constructor(username) {
 		super();

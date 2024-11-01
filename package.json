@@ -2,7 +2,7 @@
   "name": "@11ty/eleventy-activity-feed",
   "version": "1.0.9",
   "description": "Create one centralized RSS feed for all of the content you create across the web (aggregates from RSS, Atom, Mastodon, YouTube)",
-  "main": "activityFeed.js",
+  "main": "ActivityFeed.js",
   "type": "module",
   "scripts": {
     "sample": "node sample.js"
@@ -33,6 +33,7 @@
     "@11ty/eleventy-plugin-rss": "^2.0.2",
     "dotenv": "^16.4.5",
     "fast-xml-parser": "^4.5.0",
+    "filesize": "^10.1.6",
     "graceful-fs": "^4.2.11",
     "js-yaml": "^4.1.0",
     "kleur": "^4.1.5",

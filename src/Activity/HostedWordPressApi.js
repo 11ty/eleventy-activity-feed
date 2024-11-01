@@ -34,6 +34,7 @@ class HostedWordPressApiActivity extends Activity {
 	getUrl() {
 		// return function for paging
 		return (pageNumber = 1) => {
+			// DRAFTS NOT SUPPORTED
 			return `https://public-api.wordpress.com/rest/v1.1/sites/${this.hostname}/posts/?page=${pageNumber}&per_page=100`;
 		};
 	}

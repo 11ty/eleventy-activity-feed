@@ -1,3 +1,4 @@
+import "dotenv/config"
 import { Activity } from "../Activity.js";
 import { HostedWordPressApiActivity } from "./HostedWordPressApi.js"
 
@@ -36,8 +37,25 @@ class WordPressApiActivity extends Activity {
 	getUrl() {
 		// return function for paging
 		return (pageNumber = 1) => {
-			return this.#getSubtypeUrl("posts", `?page=${pageNumber}&per_page=100`);
+			// status=publish,future,draft,pending,private
+			// status=any
+
+			// Commas are encoded later
+			let statuses = "publish,draft";
+
+			return this.#getSubtypeUrl("posts", `?page=${pageNumber}&per_page=100&status=${encodeURIComponent(statuses)}`);
 		};
+	}
+
+	getHeaders() {
+		if(process.env.WORDPRESS_USERNAME && process.env.WORDPRESS_PASSWORD) {
+			return {
+				"Content-Type": "application/json",
+				"Authorization": "Basic " + btoa(`${process.env.WORDPRESS_USERNAME}:${process.env.WORDPRESS_PASSWORD}`),
+			}
+		}
+
+		return {};
 	}
 
 	getEntriesFromData(data) {

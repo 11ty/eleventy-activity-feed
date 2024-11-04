@@ -1,23 +1,22 @@
 import kleur from 'kleur';
-import EleventyFetch from "@11ty/eleventy-fetch";
-import { XMLParser } from "fast-xml-parser";
 
-const xmlParser = new XMLParser({
-	attributeNamePrefix : "@_",
-	ignoreAttributes: false,
-	allowBooleanAttributes: true,
-	parseAttributeValue: true,
-});
+import { Logger } from "./Logger.js";
 
 class Activity {
 	static UUID_PREFIX = "11tyaf";
 
-	constructor() {
-		this.fetchedUrls = new Set();
+	#fetcher;
+	#outputFolder;
+
+	setFetcher(fetcher) {
+		this.#fetcher = fetcher;
 	}
 
-	static log(...messages) {
-		console.log(...messages)
+	get fetcher() {
+		if(!this.#fetcher) {
+			throw new Error("Missing Fetcher instance.");
+		}
+		return this.#fetcher;
 	}
 
 	setLabel(label) {
@@ -45,8 +44,12 @@ class Activity {
 		}
 	}
 
-	setCacheDuration(duration) {
-		this.cacheDuration = duration;
+	setOutputFolder(dir) {
+		this.#outputFolder = dir;
+	}
+
+	get outputFolder() {
+		return this.#outputFolder;
 	}
 
 	toIsoDate(dateStr) {
@@ -84,39 +87,24 @@ class Activity {
 		return (str + '').replace(/([^>\r\n]?)(\r\n|\n\r|\r|\n)/g, '$1<br>$2');
 	}
 
-	async getData(url, type) {
-		let headers = Object.assign({
-			"user-agent": "Eleventy Activity Feed v1.0.0",
-		}, this.getHeaders());
-
-		if(!this.fetchedUrls.has(url)) {
-			Activity.log(kleur.gray("Fetching"), url, Boolean(headers.Authorization) ? kleur.blue("(Auth)") : "" );
-			this.fetchedUrls.add(url);
-		}
-
-		let result = EleventyFetch(url, {
-			duration: this.cacheDuration || "0s",
-			type: type === "json" ? type : "text",
+	async getData(url, type, showErrors = true) {
+		return this.fetcher.fetch(url, {
+			type,
 			fetchOptions: {
-				headers,
-			}
-		});
-
-		if(type === "xml") {
-			return xmlParser.parse(await result);
-		}
-
-		return result;
+				headers: this.getHeaders(),
+			},
+		}, showErrors);
 	}
 
-	async #getCleanedEntries(url) {
+	async #getCleanedEntries(url, showErrors = true) {
 		let entries = [];
-		let data = await this.getData(url, this.getType());
+		let data = await this.getData(url, this.getType(), showErrors);
 
 		for(let entry of this.getEntriesFromData(data) || []) {
 			let cleaned = await this.cleanEntry(entry, data);
 			entries.push(cleaned);
 		}
+
 		return entries;
 	}
 
@@ -130,7 +118,7 @@ class Activity {
 			try {
 				while(pagedUrl = url(pageNumber)) {
 					let found = 0;
-					for(let entry of await this.#getCleanedEntries(pagedUrl)) {
+					for(let entry of await this.#getCleanedEntries(pagedUrl, false)) {
 						entries.push(entry);
 						found++;
 					}
@@ -141,15 +129,10 @@ class Activity {
 					pageNumber++;
 				}
 			} catch(e) {
-				if(e.cause instanceof Response) {
-					let errorData = await e.cause.json();
-					if(errorData?.code === "rest_post_invalid_page_number") {
-						// Last page, do nothing.
-					} else {
-						Activity.log(kleur.red(`Error: ${e.message}`), errorData);
-					}
-				} else {
-					Activity.log(kleur.red(`Error: ${e.message}`), e);
+				let shouldWorry = await this.isErrorWorthWorryingAbout(e);
+				if(shouldWorry) {
+					Logger.error(kleur.red(`Error: ${e.message}`), e);
+					throw e;
 				}
 			}
 		} else if(typeof url === "string" || url instanceof URL) {

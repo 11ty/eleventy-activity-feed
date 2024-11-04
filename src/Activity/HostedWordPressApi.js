@@ -63,6 +63,17 @@ class HostedWordPressApiActivity extends Activity {
 	}
 
 	async cleanEntry(entry, data) {
+		let metadata = {
+			categories: Object.keys(entry.categories),
+			tags: Object.keys(entry.tags),
+		};
+
+		if(entry.featured_image) {
+			// TODO opengraphImage: { width, height, src, mime }
+			let featuredImage = this.fetcher.fetchImage(entry.featured_image, this.outputFolder);
+			metadata.featuredImage = featuredImage.url;
+		}
+
 		return {
 			uuid: this.getUniqueIdFromEntry(entry),
 			type: HostedWordPressApiActivity.TYPE,
@@ -73,12 +84,7 @@ class HostedWordPressApiActivity extends Activity {
 			dateUpdated: entry.modified,
 			content: entry.content,
 			status: this.cleanStatus(entry.status),
-			metadata: {
-				categories: Object.keys(entry.categories),
-				tags: Object.keys(entry.tags),
-				featuredImage: entry.featured_image,
-				// TODO opengraphImage: { width, height, src, mime }
-			},
+			metadata,
 		}
 	}
 }

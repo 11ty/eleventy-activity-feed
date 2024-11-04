@@ -1,12 +1,14 @@
 import path from "node:path";
-import { createHash } from "node:crypto";
 import pluginRss from "@11ty/eleventy-plugin-rss";
-import TurndownService from "turndown";
 import fs from "graceful-fs";
 import yaml from "js-yaml";
 import kleur from "kleur";
 import {filesize} from "filesize";
 
+import { Logger } from "./src/Logger.js";
+import { Fetcher } from "./src/Fetcher.js";
+import { DirectoryManager } from "./src/DirectoryManager.js";
+import { MarkdownToHtml } from "./src/MarkdownToHtml.js";
 import { YouTubeUserActivity } from "./src/Activity/YouTubeUser.js";
 import { AtomActivity } from "./src/Activity/Atom.js";
 import { RssActivity } from "./src/Activity/Rss.js";
@@ -14,20 +16,26 @@ import { WordPressApiActivity } from "./src/Activity/WordPressApi.js";
 import { BlueskyUserActivity } from "./src/Activity/BlueskyUser.js";
 import { FediverseUserActivity } from "./src/Activity/FediverseUserActivity.js";
 
-const HASH_FILENAME_MAXLENGTH = 12;
-
-const WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION = {
-	jscript: "js"
-};
+const MAX_IMPORT_SIZE = 0;
 
 class ActivityFeed {
 	#draftsFolder = "drafts";
 	#outputFolder = ".";
-	#cacheDuration = "0s";
-	#turndownService = null;
 
 	constructor() {
 		this.sources = [];
+
+		this.markdownService = new MarkdownToHtml();
+		this.directoryManager = new DirectoryManager();
+		this.fetcher = new Fetcher();
+
+		this.markdownService.setFetcher(this.fetcher);
+
+		this.fetcher.setDirectoryManager(this.directoryManager);
+	}
+
+	getCounts() {
+		return this.fetcher.getCounts();
 	}
 
 	setDraftsFolder(dir) {
@@ -36,36 +44,13 @@ class ActivityFeed {
 
 	setOutputFolder(dir) {
 		this.#outputFolder = dir;
+		this.markdownService.setOutputFolder(dir);
 	}
 
 	setCacheDuration(duration) {
-		this.#cacheDuration = duration;
-	}
-
-
-	get turndownService() {
-		if(!this.#turndownService) {
-			this.#turndownService = new TurndownService({
-				headingStyle: "atx",
-				bulletListMarker: "-",
-				codeBlockStyle: "fenced",
-				// preformattedCode: true,
-			});
-
-			this.#turndownService.addRule("pre-without-code-to-fenced-codeblock", {
-				filter: ["pre"],
-				replacement: function(content, node) {
-					let brush = (node.getAttribute("class") || "").split(";").filter(entry => entry.startsWith("brush:"))
-					let language = (brush[0] || ":").split(":")[1].trim();
-
-					return `\`\`\`${WORDPRESS_TO_PRISM_LANGUAGE_TRANSLATION[language] || language}
-			${content}
-			\`\`\``;
-				}
-			});
+		if(duration) {
+			this.fetcher.setCacheDuration(duration);
 		}
-
-		return this.#turndownService;
 	}
 
 	addSource(type, options = {}) {
@@ -90,7 +75,6 @@ class ActivityFeed {
 
 		let identifier;
 		let label;
-		let cacheDuration = this.#cacheDuration;
 		let filepathFormat;
 
 		if(typeof options === "string") {
@@ -98,18 +82,18 @@ class ActivityFeed {
 		} else {
 			identifier = options.url || options.id;
 			label = options.label;
-			cacheDuration = options.cacheDuration;
 			filepathFormat = options.filepathFormat;
 		}
 
 		let source = new cls(identifier);
+		source.setFetcher(this.fetcher);
+
+		if(this.#outputFolder) {
+			source.setOutputFolder(this.#outputFolder);
+		}
 
 		if(label) {
 			source.setLabel(label);
-		}
-
-		if(cacheDuration) {
-			source.setCacheDuration(cacheDuration);
 		}
 
 		if(filepathFormat) {
@@ -117,10 +101,6 @@ class ActivityFeed {
 		}
 
 		this.sources.push(source);
-	}
-
-	convertHtmlToMarkdown(html) {
-		return this.turndownService.turndown(html);
 	}
 
 	async getEntries(options = {}) {
@@ -131,9 +111,13 @@ class ActivityFeed {
 			}
 		}
 
-		return entries.map(entry => {
+		if(MAX_IMPORT_SIZE) {
+			entries = entries.slice(0, MAX_IMPORT_SIZE);
+		}
+
+		let promises = await Promise.all(entries.map(async entry => {
 			if(options.contentType === "markdown") {
-				entry.content = this.convertHtmlToMarkdown(entry.content);
+				entry.content = await this.markdownService.toHtml(entry.content, entry.url);
 			}
 
 			if(options.contentType) {
@@ -141,7 +125,9 @@ class ActivityFeed {
 			}
 
 			return entry;
-		}).sort((a, b) => {
+		}));
+
+		return promises.sort((a, b) => {
 			if(a.date < b.date) {
 				return 1;
 			}
@@ -150,12 +136,6 @@ class ActivityFeed {
 			}
 			return 0;
 		});
-	}
-
-	getDirectory(pathname) {
-		let dirs = pathname.split("/");
-		dirs.pop();
-		return dirs.join("/");
 	}
 
 	getFilePath(entry) {
@@ -185,7 +165,7 @@ class ActivityFeed {
 
 		// WordPress drafts only have a UUID query param e.g. ?p=ID_NUMBER
 		if(fallbackPath === "/") {
-			fallbackPath = createHash("sha256").update(entry.url).digest("base64").replace(/[^A-Z0-9]/gi, "").slice(0, HASH_FILENAME_MAXLENGTH);
+			fallbackPath = Fetcher.createHash(entry.url);
 		}
 
 		let subdirs = [];
@@ -208,7 +188,6 @@ class ActivityFeed {
 
 	// TODO options.pathPrefix
 	toFiles(entries = [], options = {}) {
-		let dirsCreated = {};
 		let filepathConflicts = {};
 		let filesWrittenCount = 0;
 
@@ -249,30 +228,20 @@ ${entry.content}`
 			}
 			filepathConflicts[pathname] = entry.url || true;
 
-			let dir = this.getDirectory(pathname);
-			if(dir && !dirsCreated[dir]) {
-				if(!options.dryRun) {
-					fs.mkdirSync(dir, { recursive: true })
-				}
-
-				dirsCreated[dir] = true;
+			if(!options.dryRun) {
+				this.directoryManager.createDirectoryForPath(pathname);
 			}
 
-			console.log(kleur.gray("Importing"), entry.url, kleur.gray("to"), pathname, kleur.gray(`(${filesize(content.length, {
+			let size = filesize(content.length, {
 				spacer: ""
-			})}${options.dryRun ? ", dry run" : ""})`));
+			});
+			Logger.log(kleur.gray("Importing post"), pathname, kleur.gray(`(${size}${options.dryRun ? ", dry run" : ""})`), kleur.gray("from"), entry.url);
+
 			if(!options.dryRun) {
 				fs.writeFileSync(pathname, content, { recursive: true, encoding: "utf8" });
 			}
 			filesWrittenCount++;
 		}
-
-		return {
-			counts: {
-				files: filesWrittenCount,
-				directories: Object.keys(dirsCreated).length,
-			}
-		};
 	}
 
 	async toRssFeed(entries, metadata = {}) {

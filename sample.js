@@ -42,7 +42,7 @@ let { counts } = feed.toFiles(entries, {
 	dryRun: true, // don’t write anything
 });
 
-console.log( `${kleur.gray("Imported")} ×${counts.files}` );
+console.log( feed.getCounts() );
 
 // let feedContent = await feed.toRssFeed(entries, {
 // 	title: "Eleventy’s Activity Feed",

@@ -15,6 +15,18 @@ class WordPressApiActivity extends Activity {
 		this.url = url;
 	}
 
+	// some pagination errors just mean there are no more pages
+	async isErrorWorthWorryingAbout(e) {
+		if(e?.cause instanceof Response) {
+			let errorData = await e.cause.json();
+			if(errorData?.code === "rest_post_invalid_page_number") {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
 	getType() {
 		return "json";
 	}
@@ -112,11 +124,13 @@ class WordPressApiActivity extends Activity {
 		});
 	}
 
-	// Supports: Title, Aluthor, Published/Updated Dates
+	// Supports: Title, Author, Published/Updated Dates
 	async cleanEntry(entry, data) {
-		let metadata = {
-			featuredImage: entry.jetpack_featured_media_url,
-		};
+		let metadata = {};
+		if(entry.jetpack_featured_media_url) {
+			let featuredImage = this.fetcher.fetchImage(entry.jetpack_featured_media_url, this.outputFolder);
+			metadata.featuredImage = featuredImage.url;
+		}
 
 		let categories = await this.#getCategories(entry.categories);
 		if(categories.length) {

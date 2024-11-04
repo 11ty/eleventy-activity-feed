@@ -38,8 +38,8 @@ let entries = await feed.getEntries({
 	contentType: "markdown"
 });
 
-let { counts } = feed.toFiles(entries, {
-	dryRun: true, // don’t write anything
+feed.toFiles(entries, {
+	// dryRun: true, // don’t write anything
 });
 
 console.log( feed.getCounts() );

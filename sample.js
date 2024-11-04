@@ -39,7 +39,7 @@ let entries = await feed.getEntries({
 });
 
 feed.toFiles(entries, {
-	// dryRun: true, // don’t write anything
+	dryRun: true, // don’t write anything
 });
 
 console.log( feed.getCounts() );

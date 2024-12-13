@@ -1,19 +1,18 @@
 # eleventy-activity-feed
 
-Activity feed lets you build one centralized RSS feed that pulls in new entries from a bunch of different social networking sites. Support for (one or more) YouTube, RSS or Atom for existing blogs, and Bluesky or Mastodon (via RSS). Contributions for more are welcome!
+Activity Feed lets you build one centralized RSS feed that pulls in new entries from a bunch of different social networking sites. Support for (one or more) YouTube, RSS or Atom for existing blogs, and Bluesky or Mastodon (via RSS). Contributions for more are welcome [in the `@11ty/import` package](https://github.com/11ty/eleventy-import)!
 
 This allows you to encourage folks to subscribe in *one* location and you can control how that feed is populated later.
 
 **Limitations:**
 
-- This is not a permanent data store or archival tool for your content. This does _not_ (yet?) fetch old data beyond the initial page of results for each activity type’s API. This is merely a aggregation and rebroadcast tool for your new content in RSS.
+- This is not a permanent data store or archival tool for your content. This is merely a aggregation and rebroadcast tool for your new content in RSS. [Use `@11ty/import` for the archival use case](https://github.com/11ty/eleventy-import)!
 
 **Caching Notes**:
 
 - When used in a static build, this will only update the feed when your build runs. I’d recommend setting up a recurring build to generate your feed regularly (maybe daily?).
 - You can persist your fetch cache across builds—learn more on the [Eleventy Fetch docs](https://www.11ty.dev/docs/plugins/fetch/#running-this-on-your-build-server). Vercel and Cloudflare Pages offer this functionality for-free.
 	- You can control the maximum frequency at which new fetches are made to the APIs using `feed.setCacheDuration("4h");`
-
 
 ## Demo
 
@@ -76,9 +75,3 @@ Add to the `<head>` of your page to show it in RSS readers:
 ```html
 <link rel="alternate" href="/follow.rss" title="Eleventy’s Activity Feed" type="application/rss+xml">
 ```
-
-## What’s Next?
-
-Happy to accept PRs for better HTML display of different feed entries ([YouTube needs URL->`<a>` linkified descriptions](https://github.com/11ty/eleventy-activity-feed/issues/2) and addition of more types of data! Feel free to contribute!
-
-Check out the [issue tracker](https://github.com/11ty/eleventy-activity-feed/issues).

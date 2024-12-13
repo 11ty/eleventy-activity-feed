@@ -1,55 +1,27 @@
-import kleur from "kleur";
 import { ActivityFeed } from "./ActivityFeed.js";
 
 let feed = new ActivityFeed();
 
 feed.setCacheDuration("4h");
-// feed.setDraftsFolder("drafts");
-feed.setOutputFolder("dist");
 
 // YouTube
-feed.addSource("youtubeUser", "UCskGTioqrMBcw8pd14_334A");
+feed.addSource("youtubeUser", "YouTube", "UCskGTioqrMBcw8pd14_334A");
 
 // Blog
-feed.addSource("atom", "https://www.11ty.dev/blog/feed.xml");
+feed.addSource("atom", "Blog", "https://www.11ty.dev/blog/feed.xml");
 
 // GitHub Releases
-feed.addSource("atom",{
-	url: "https://github.com/11ty/eleventy/releases.atom",
-	filepathFormat: (url) => `/11ty/releases/${url.split("/").pop()}.md`,
+feed.addSource("atom", "Releases", "https://github.com/11ty/eleventy/releases.atom");
+
+// Mastodon
+// feed.addSource("rss", "Mastodon", "https://fediverse.zachleat.com/users/zachleat.rss");
+feed.addSource("rss", "Mastodon", "https://fosstodon.org/users/eleventy.rss");
+
+let content = await feed.toRssFeed({
+	title: "Eleventy’s Activity Feed",
+	language: "en",
+	url: "https://www.11ty.dev/follow/",
+	subtitle: "One centralized feed of Eleventy activity across the web.",
 });
 
-// Social RSS feeds (limited historical content)
-feed.addSource("fediverse", "zachleat@fediverse.zachleat.com");
-feed.addSource("fediverse", "eleventy@fosstodon.org");
-
-feed.addSource("rss", "https://fosstodon.org/users/eleventy.rss");
-
-feed.addSource("bluesky", "zachleat.com");
-feed.addSource("bluesky", "11ty.dev");
-
-// WordPress blogs
-feed.addSource("wordpressApi", "https://blog.fontawesome.com/");
-
-// feed.addSource("rss", "https://baseline2024.wordpress.com/feed/");
-feed.addSource("wordpressApi", "https://baseline2024.wordpress.com/");
-
-let entries = await feed.getEntries({
-	contentType: "markdown"
-});
-
-feed.toFiles(entries, {
-	dryRun: true, // don’t write anything
-});
-
-console.log( feed.getCounts() );
-
-// let feedContent = await feed.toRssFeed(entries, {
-// 	title: "Eleventy’s Activity Feed",
-// 	language: "en",
-// 	url: "https://www.11ty.dev/follow/",
-// 	subtitle: "One centralized feed of Eleventy activity across the web.",
-// });
-
-// console.log( "Last entry:", entries[entries.length - 1] );
-// console.log( entries.length, "Results Found" );
+console.log( content );

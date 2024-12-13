@@ -11,7 +11,7 @@ This allows you to encourage folks to subscribe in *one* location and you can co
 **Caching Notes**:
 
 - When used in a static build, this will only update the feed when your build runs. I’d recommend setting up a recurring build to generate your feed regularly (maybe daily?).
-- If on Netlify, I would also recommend using the `netlify-plugin-cache` plugin to persist your API fetch call cache across builds. You can see an example of this on the [Eleventy Fetch docs](https://www.11ty.dev/docs/plugins/fetch/#running-this-on-your-build-server). Vercel and Cloudflare Pages offer this functionality for-free.
+- You can persist your fetch cache across builds—learn more on the [Eleventy Fetch docs](https://www.11ty.dev/docs/plugins/fetch/#running-this-on-your-build-server). Vercel and Cloudflare Pages offer this functionality for-free.
 	- You can control the maximum frequency at which new fetches are made to the APIs using `feed.setCacheDuration("4h");`
 
 

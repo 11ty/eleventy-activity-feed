@@ -30,6 +30,6 @@
   "homepage": "https://github.com/11ty/eleventy-activity-feed#readme",
   "dependencies": {
     "@11ty/eleventy-plugin-rss": "^2.0.2",
-    "@11ty/import": "^1.0.7"
+    "@11ty/import": "^1.0.8"
   }
 }

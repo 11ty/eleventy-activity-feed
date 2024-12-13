@@ -2,10 +2,18 @@ import { Importer } from "@11ty/import";
 import pluginRss from "@11ty/eleventy-plugin-rss";
 
 class ActivityFeed {
-	constructor() {
-		this.importer = new Importer();
-		this.importer.setDryRun(true);
-		this.contentType
+	#importer;
+
+	get importer() {
+		if(!this.#importer) {
+			this.#importer = new Importer();
+			this.#importer.setDryRun(true);
+			this.#importer.setAssetReferenceType("disabled");
+			// TODO make this an option
+			this.#importer.setVerbose(false); // --quiet
+		}
+
+		return this.#importer;
 	}
 
 	setCacheDuration(duration) {
